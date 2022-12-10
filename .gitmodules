@@ -1,0 +1,3 @@
+[submodule "src/src/common"]
+	path = src/src/common
+	url = https://github.com/Vogelwarte/SnowfinchWire.Common.git
