@@ -1,9 +1,0 @@
-[submodule "common"]
-	path = common
-	url = https://github.com/Vogelwarte/SnowfinchWire.Common.git
-[submodule "src/brood/common"]
-	path = src/brood/common
-	url = https://github.com/Vogelwarte/SnowfinchWire.Common.git
-[submodule "src/common"]
-	path = src/common
-	url = https://github.com/Vogelwarte/SnowfinchWire.Common.git
