@@ -1,6 +1,6 @@
 import argparse
 
-from common.preprocessing.io import load_recording_data, validate_recording_data
+from .common.preprocessing.io import load_recording_data, validate_recording_data
 
 if __name__ == '__main__':
 	arg_parser = argparse.ArgumentParser()

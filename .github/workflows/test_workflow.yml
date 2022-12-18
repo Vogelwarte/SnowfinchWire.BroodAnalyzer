@@ -24,4 +24,4 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Test with unittest
         run: |
-          python -m unittest discover ./src/tests -p '*_tests.py'
+          python -m unittest discover ./sfw_brood/tests -p '*_tests.py'
