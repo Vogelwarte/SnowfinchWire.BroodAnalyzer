@@ -40,11 +40,7 @@ def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overl
 	slices = []
 
 	while start < len(audio):
-		# file_no = len(files)
-
-		# files.append(file_name)
 		slices.append(audio[start:end])
-
 		start += (samples_per_slice - overlap_samples)
 		end = min(len(audio), start + samples_per_slice)
 

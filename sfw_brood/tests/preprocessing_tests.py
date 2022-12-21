@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from sfw_brood.common.preprocessing.io import SnowfinchNestRecording
-from sfw_brood.preprocessing import prepare_training_data
+from sfw_brood.preprocessing import prepare_training_data, slice_audio
 
 
 class PrepareTrainingDataTests(TestCase):
@@ -61,3 +61,60 @@ class PrepareTrainingDataTests(TestCase):
 		for bs in range(1, self.BROOD_SIZE + 1):
 			col_vals = set(train_df[str(bs)].unique())
 			self.assertTrue(col_vals.issubset({ 0, 1 }))
+
+
+class SliceAudioTests(TestCase):
+	AUDIO_LEN_SEC = 60
+	AUDIO_SAMPLE_RATE = 48000
+
+	def setUp(self) -> None:
+		self.audio = np.random.random(self.AUDIO_SAMPLE_RATE * self.AUDIO_LEN_SEC) * 2.0 - 1.0
+
+	def test__returned_data_type(self):
+		slice_len_sec = 4.0
+		slices = slice_audio(self.audio, self.AUDIO_SAMPLE_RATE, slice_len_sec)
+		self.assertIsInstance(slices, list)
+		for s in slices:
+			self.assertIsInstance(s, np.ndarray)
+
+	def test__slices_count_no_overlap(self):
+		slice_len_sec = 4.0
+		slices = slice_audio(self.audio, self.AUDIO_SAMPLE_RATE, slice_len_sec)
+		self.assertEqual(math.ceil(self.AUDIO_LEN_SEC / slice_len_sec), len(slices))
+
+	def test__slices_count_with_overlap(self):
+		slice_len_sec = 5.0
+		overlap_sec = 2.0
+		slices = slice_audio(self.audio, self.AUDIO_SAMPLE_RATE, slice_len_sec, overlap_sec)
+
+		self.assertEqual(math.ceil(self.AUDIO_LEN_SEC / (slice_len_sec - overlap_sec)), len(slices))
+
+	def test__slices_durations_no_overlap(self):
+		slice_len_sec = 4.0
+		expected_samples_per_slice = round(slice_len_sec * self.AUDIO_SAMPLE_RATE)
+
+		slices = slice_audio(self.audio, self.AUDIO_SAMPLE_RATE, slice_len_sec)
+		for i in range(len(slices) - 1):
+			self.assertEqual(expected_samples_per_slice, len(slices[i]))
+		self.assertLessEqual(len(slices[-1]), expected_samples_per_slice)
+
+	def test__slices_durations_with_overlap(self):
+		slice_len_sec = 4.0
+		expected_samples_per_slice = round(slice_len_sec * self.AUDIO_SAMPLE_RATE)
+
+		slices = slice_audio(self.audio, self.AUDIO_SAMPLE_RATE, slice_len_sec, overlap_sec = 1.0)
+		for i in range(len(slices) - 1):
+			self.assertEqual(expected_samples_per_slice, len(slices[i]))
+		self.assertLessEqual(len(slices[-1]), expected_samples_per_slice)
+
+	def test__slices_overlap(self):
+		slice_len_sec = 4.0
+		overlap_sec = 1.0
+		slices = slice_audio(self.audio, self.AUDIO_SAMPLE_RATE, slice_len_sec, overlap_sec)
+
+		overlap_samples = round(overlap_sec * self.AUDIO_SAMPLE_RATE)
+
+		for i in range(len(slices) - 1):
+			s1 = slices[i]
+			s2 = slices[i + 1]
+			self.assertTrue(all(s1[-overlap_samples:] == s2[:overlap_samples]))
