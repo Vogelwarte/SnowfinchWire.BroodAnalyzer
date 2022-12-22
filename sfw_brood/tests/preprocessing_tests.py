@@ -16,7 +16,7 @@ class PrepareTrainingDataTests(TestCase):
 	CNN_SAMPLE_DURATION = 2
 	BROOD_SIZES = [2, 3, 4]
 	BROOD_AGES = list(np.linspace(3, 20, num = 18, dtype = 'int'))
-	DATA_PATH = '../../_data'
+	DATA_PATH = '../../_data/test'
 
 	def setUp(self) -> None:
 		self.recording = SnowfinchNestRecording(
@@ -29,11 +29,10 @@ class PrepareTrainingDataTests(TestCase):
 		)
 
 	def doCleanups(self) -> None:
-		work_dir = f'{self.DATA_PATH}/{self.recording.title}'
-		if Path(work_dir).exists():
-			for file in os.listdir(work_dir):
-				os.remove(f'{work_dir}/{file}')
-			os.rmdir(work_dir)
+		if Path(self.DATA_PATH).exists():
+			for file in os.listdir(self.DATA_PATH):
+				os.remove(f'{self.DATA_PATH}/{file}')
+			os.rmdir(self.DATA_PATH)
 
 	def test__brood_size_data_frame_shape(self):
 		expected_n_rows = math.ceil(self.RECORDING_DURATION_SEC / self.CNN_SAMPLE_DURATION)
