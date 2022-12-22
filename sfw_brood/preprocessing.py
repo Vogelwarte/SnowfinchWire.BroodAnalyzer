@@ -6,6 +6,14 @@ import pandas as pd
 import soundfile as sf
 
 from .common.preprocessing.io import SnowfinchNestRecording
+from .common.preprocessing.io import number_from_recording_name
+
+
+@dataclass
+class TrainingDataset:
+	files: list[Path]
+	brood_sizes: list[int]
+	brood_ages: list[float]
 
 
 def prepare_training_data(
@@ -53,3 +61,19 @@ def __make_training_frame__(files: list[str], classes: list, match) -> pd.DataFr
 		else:
 			data[str(c)] = list(np.zeros(len(files), dtype = 'int'))
 	return pd.DataFrame(data = data).set_index('file')
+
+
+def discover_training_data(data_dir: str) -> TrainingDataset:
+	file_paths = []
+	brood_sizes = set()
+	brood_ages = set()
+
+	for path in Path(data_dir).rglob('*.flac'):
+		file_paths.append(path)
+		rec_title = path.stem
+		brood_age = number_from_recording_name(rec_title, label = 'BA', terminator = '_')
+		brood_ages.add(brood_age)
+		brood_size = number_from_recording_name(rec_title, label = 'BS', terminator = '-')
+		brood_sizes.add(brood_size)
+
+	return TrainingDataset(file_paths, list(brood_sizes), list(brood_ages))
