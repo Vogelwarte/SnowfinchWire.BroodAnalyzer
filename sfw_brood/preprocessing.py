@@ -8,9 +8,10 @@ from .common.preprocessing.io import SnowfinchNestRecording
 
 
 def prepare_training_data(
-		recording: SnowfinchNestRecording, data_dir: str, slice_duration_sec: float, overlap_sec: float = 0.0
-) -> pd.DataFrame:
-	slices_dir = Path(f'{data_dir}/{recording.title}')
+		recording: SnowfinchNestRecording, brood_sizes: list[int], brood_ages: list[float],
+		work_dir: str, slice_duration_sec: float, overlap_sec: float = 0.0
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+	slices_dir = Path(f'{work_dir}/{recording.title}')
 	slices_dir.mkdir(exist_ok = True, parents = True)
 
 	slices = slice_audio(recording.audio_data, recording.audio_sample_rate, slice_duration_sec, overlap_sec)
@@ -21,14 +22,10 @@ def prepare_training_data(
 		files.append(file_path)
 		sf.write(file_path, audio, samplerate = recording.audio_sample_rate)
 
-	out_data = { 'file': files }
-	for bs in range(1, recording.brood_size + 1):
-		if bs == recording.brood_size:
-			out_data[str(bs)] = list(np.ones(len(files), dtype = 'int'))
-		else:
-			out_data[str(bs)] = list(np.zeros(len(files), dtype = 'int'))
+	bs_data = make_training_frame(files, brood_sizes, recording.brood_size)
+	ba_data = make_training_frame(files, brood_ages, recording.brood_age)
 
-	return pd.DataFrame(data = out_data).set_index('file')
+	return bs_data, ba_data
 
 
 def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overlap_sec = 0.0) -> list[np.ndarray]:
@@ -45,3 +42,13 @@ def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overl
 		end = min(len(audio), start + samples_per_slice)
 
 	return slices
+
+
+def make_training_frame(files: list[str], classes: list, match) -> pd.DataFrame:
+	data = { 'file': files }
+	for c in classes:
+		if c == match:
+			data[str(c)] = list(np.ones(len(files), dtype = 'int'))
+		else:
+			data[str(c)] = list(np.zeros(len(files), dtype = 'int'))
+	return pd.DataFrame(data = data).set_index('file')

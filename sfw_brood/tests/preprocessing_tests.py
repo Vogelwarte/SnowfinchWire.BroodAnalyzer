@@ -14,8 +14,8 @@ class PrepareTrainingDataTests(TestCase):
 	RECORDING_DURATION_SEC = 60
 	RECORDING_SAMPLE_RATE = 48000
 	CNN_SAMPLE_DURATION = 2
-	BROOD_SIZE = 3
-	BROOD_AGE = 10
+	BROOD_SIZES = [2, 3, 4]
+	BROOD_AGES = list(np.linspace(3, 20, num = 18, dtype = 'int'))
 	DATA_PATH = '../../_data'
 
 	def setUp(self) -> None:
@@ -24,8 +24,8 @@ class PrepareTrainingDataTests(TestCase):
 			audio_data = np.random.random(self.RECORDING_SAMPLE_RATE * self.RECORDING_DURATION_SEC) * 2.0 - 1.0,
 			audio_sample_rate = self.RECORDING_SAMPLE_RATE,
 			labels = pd.DataFrame(),
-			brood_size = self.BROOD_SIZE,
-			brood_age = self.BROOD_AGE
+			brood_size = np.random.choice(self.BROOD_SIZES),
+			brood_age = np.random.choice(self.BROOD_AGES)
 		)
 
 	def doCleanups(self) -> None:
@@ -35,31 +35,68 @@ class PrepareTrainingDataTests(TestCase):
 				os.remove(f'{work_dir}/{file}')
 			os.rmdir(work_dir)
 
-	def test__returned_data_frame_shape(self):
+	def test__brood_size_data_frame_shape(self):
 		expected_n_rows = math.ceil(self.RECORDING_DURATION_SEC / self.CNN_SAMPLE_DURATION)
-		expected_n_cols = self.BROOD_SIZE
+		expected_n_cols = len(self.BROOD_SIZES)
 
-		train_df = prepare_training_data(self.recording, self.DATA_PATH, self.CNN_SAMPLE_DURATION)
+		bs_df, _ = prepare_training_data(
+			self.recording, self.BROOD_SIZES, self.BROOD_AGES, self.DATA_PATH, self.CNN_SAMPLE_DURATION
+		)
 
-		self.assertIsInstance(train_df, pd.DataFrame)
-		self.assertEqual((expected_n_rows, expected_n_cols), train_df.shape)
+		self.assertIsInstance(bs_df, pd.DataFrame)
+		self.assertEqual((expected_n_rows, expected_n_cols), bs_df.shape)
 
-	def test__returned_data_frame_column_names(self):
-		expected_columns = [str(i + 1) for i in range(self.BROOD_SIZE)]
+	def test__brood_age_data_frame_shape(self):
+		expected_n_rows = math.ceil(self.RECORDING_DURATION_SEC / self.CNN_SAMPLE_DURATION)
+		expected_n_cols = len(self.BROOD_AGES)
 
-		train_df = prepare_training_data(self.recording, self.DATA_PATH, self.CNN_SAMPLE_DURATION)
+		_, ba_df = prepare_training_data(
+			self.recording, self.BROOD_SIZES, self.BROOD_AGES, self.DATA_PATH, self.CNN_SAMPLE_DURATION
+		)
 
-		self.assertEqual(len(expected_columns), len(train_df.columns))
-		self.assertEqual(expected_columns, list(train_df.columns))
-		self.assertEqual('file', train_df.index.name)
+		self.assertIsInstance(ba_df, pd.DataFrame)
+		self.assertEqual((expected_n_rows, expected_n_cols), ba_df.shape)
 
-	def test__returned_data_frame_column_types(self):
-		train_df = prepare_training_data(self.recording, self.DATA_PATH, self.CNN_SAMPLE_DURATION)
+	def test__brood_size_data_frame_column_names(self):
+		expected_col_names = [str(bs) for bs in self.BROOD_SIZES]
+		bs_df, _ = prepare_training_data(
+			self.recording, self.BROOD_SIZES, self.BROOD_AGES, self.DATA_PATH, self.CNN_SAMPLE_DURATION
+		)
 
-		self.assertEqual('object', train_df.index.dtype.name)
+		self.assertEqual(len(self.BROOD_SIZES), len(bs_df.columns))
+		self.assertEqual(expected_col_names, list(bs_df.columns))
+		self.assertEqual('file', bs_df.index.name)
 
-		for bs in range(1, self.BROOD_SIZE + 1):
-			col_vals = set(train_df[str(bs)].unique())
+	def test__brood_age_data_frame_column_names(self):
+		expected_col_names = [str(ba) for ba in self.BROOD_AGES]
+		_, ba_df = prepare_training_data(
+			self.recording, self.BROOD_SIZES, self.BROOD_AGES, self.DATA_PATH, self.CNN_SAMPLE_DURATION
+		)
+
+		self.assertEqual(len(self.BROOD_AGES), len(ba_df.columns))
+		self.assertEqual(expected_col_names, list(ba_df.columns))
+		self.assertEqual('file', ba_df.index.name)
+
+	def test__brood_size_data_frame_column_types(self):
+		bs_df, _ = prepare_training_data(
+			self.recording, self.BROOD_SIZES, self.BROOD_AGES, self.DATA_PATH, self.CNN_SAMPLE_DURATION
+		)
+
+		self.assertEqual('object', bs_df.index.dtype.name)
+
+		for bs in self.BROOD_SIZES:
+			col_vals = set(bs_df[str(bs)].unique())
+			self.assertTrue(col_vals.issubset({ 0, 1 }))
+
+	def test__brood_age_data_frame_column_types(self):
+		_, ba_df = prepare_training_data(
+			self.recording, self.BROOD_SIZES, self.BROOD_AGES, self.DATA_PATH, self.CNN_SAMPLE_DURATION
+		)
+
+		self.assertEqual('object', ba_df.index.dtype.name)
+
+		for ba in self.BROOD_AGES:
+			col_vals = set(ba_df[str(ba)].unique())
 			self.assertTrue(col_vals.issubset({ 0, 1 }))
 
 
