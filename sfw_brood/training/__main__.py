@@ -36,9 +36,9 @@ def cleanup(training_dir: str):
 
 
 if __name__ == '__main__':
-	training_dir = '../../_training'
+	training_dir = '_training'
 	bs_train_data, ba_train_data = preprocess_data(
-		data_dir = os.getenv('DATA_PATH', default = '../../_data'),
+		data_dir = os.getenv('DATA_PATH', default = '_data'),
 		training_dir = training_dir
 	)
 
