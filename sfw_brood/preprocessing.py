@@ -23,10 +23,16 @@ def prepare_training_data(
 	slices_dir = Path(f'{work_dir}')
 	slices_dir.mkdir(exist_ok = True, parents = True)
 
-	slices = slice_audio(recording.audio_data, recording.audio_sample_rate, slice_duration_sec, overlap_sec)
-	files = []
+	intereseting_audio = filter_recording(recording, ['feeding', 'contact'])
+	# we might still want to erase some mostly silent slices
 
-	for i, audio in enumerate(slices):
+	audio_slices = []
+	for audio in intereseting_audio:
+		slices = slice_audio(audio, recording.audio_sample_rate, slice_duration_sec, overlap_sec)
+		audio_slices += slices
+
+	files = []
+	for i, audio in enumerate(audio_slices):
 		file_path = f'{slices_dir}/{recording.title}__{i}.wav'
 		files.append(file_path)
 		sf.write(file_path, audio, samplerate = recording.audio_sample_rate)
@@ -77,3 +83,17 @@ def discover_training_data(data_dir: str) -> TrainingDataset:
 		brood_sizes.add(brood_size)
 
 	return TrainingDataset(file_paths, list(brood_sizes), list(brood_ages))
+
+
+def filter_recording(recording: SnowfinchNestRecording, target_labels: list[str]) -> list[np.ndarray]:
+	filtered_audio = []
+	matching_events = recording.labels[recording.labels.label.isin(target_labels)]
+
+	for i in range(len(matching_events)):
+		audio_event = matching_events.iloc[i]
+		event_start = round(audio_event.start * recording.audio_sample_rate)
+		event_end = round(audio_event.end * recording.audio_sample_rate)
+		event_audio = recording.audio_data[event_start:event_end]
+		filtered_audio.append(event_audio)
+
+	return filtered_audio

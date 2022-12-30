@@ -23,7 +23,11 @@ class PrepareTrainingDataTests(TestCase):
 			title = 'mock_recording',
 			audio_data = np.random.random(self.RECORDING_SAMPLE_RATE * self.RECORDING_DURATION_SEC) * 2.0 - 1.0,
 			audio_sample_rate = self.RECORDING_SAMPLE_RATE,
-			labels = pd.DataFrame(),
+			labels = pd.DataFrame(data = {
+				'start': [0.0, self.RECORDING_DURATION_SEC / 2],
+				'end': [self.RECORDING_DURATION_SEC / 2 - 1.0, self.RECORDING_DURATION_SEC - 1.0],
+				'label': ['contact', 'feeding']
+			}),
 			brood_size = np.random.choice(self.BROOD_SIZES),
 			brood_age = np.random.choice(self.BROOD_AGES)
 		)
