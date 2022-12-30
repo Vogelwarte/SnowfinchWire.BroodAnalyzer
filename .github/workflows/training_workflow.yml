@@ -13,6 +13,13 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
+      - name: Checkout submodules using a PAT
+        run: |
+          git config --file .gitmodules --get-regexp url | while read url; do
+            git config --file=.gitmodules $(echo "$url" | sed -E "s/git@github.com:|https:\/\/github.com\//https:\/\/${{ secrets.SNOWFINCHWIRE_ALL_CHECKOUT }}:${{ secrets.SNOWFINCHWIRE_ALL_CHECKOUT }}@github.com\//")
+          done
+          git submodule sync
+          git submodule update --init --recursive
       - name: Set up Python 3.9
         uses: actions/setup-python@v3
         with:
