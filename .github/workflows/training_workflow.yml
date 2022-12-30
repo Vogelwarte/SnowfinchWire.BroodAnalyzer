@@ -5,6 +5,9 @@ on: [ workflow_dispatch ]
 permissions:
   contents: read
 
+env:
+  DATA_PATH: ~/Snowfinch-acoustics/AI_training_recordings
+
 jobs:
   train:
     runs-on: self-hosted
