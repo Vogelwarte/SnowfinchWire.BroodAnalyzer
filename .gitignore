@@ -4,3 +4,4 @@ venv
 __pycache__
 
 _data
+_training
