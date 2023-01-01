@@ -34,3 +34,8 @@ jobs:
       - name: Run training
         run: |
           python -m sfw_brood.train
+      - name: Archive trained model
+        uses: actions/upload-artifact@v3
+        with:
+          name: trained-model
+          path: _out/trained_model

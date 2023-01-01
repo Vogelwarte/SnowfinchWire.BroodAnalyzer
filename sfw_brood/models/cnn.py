@@ -1,23 +1,15 @@
-import time
-
-import pandas as pd
+from opensoundscape.torch.models.cnn import CNN
 
 from .model import SnowfinchBroodClassifier
 
 
 class SnowfinchBroodCNN(SnowfinchBroodClassifier):
-	def test(self, test_data_path: str) -> float:
-		print('Testing not implemented')
-		return 0.0
+	def __init__(self, trained_cnn: CNN):
+		self.cnn = trained_cnn
 
-	def predict(self) -> int:
+	def predict(self, recording_paths: list[str]) -> list[int]:
 		print('Prediction not implemented')
-		return 0
+		return [0] * len(recording_paths)
 
 	def serialize(self, path: str):
-		print('Serialization not implemented')
-
-	def _do_training_(self, train_data: tuple[pd.DataFrame, pd.DataFrame]):
-		print('Training model ... ', end = '')
-		time.sleep(1.0)
-		print('OK')
+		self.cnn.save(path)
