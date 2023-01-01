@@ -33,4 +33,4 @@ jobs:
           tree -a
       - name: Run training
         run: |
-          python -m sfw_brood.training
+          python -m sfw_brood.train
