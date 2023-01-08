@@ -1,7 +1,7 @@
 import pandas as pd
 from opensoundscape.torch.models.cnn import CNN
 
-from .model import SnowfinchBroodClassifier
+from sfw_brood.model import SnowfinchBroodClassifier
 
 
 class SnowfinchBroodCNN(SnowfinchBroodClassifier):
