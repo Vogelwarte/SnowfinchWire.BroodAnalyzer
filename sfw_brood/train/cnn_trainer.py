@@ -10,7 +10,7 @@ from sfw_brood.preprocessing import SnowfinchDataset, prepare_training
 from sfw_brood.train.trainer import ModelTrainer, TrainResult
 
 
-def __cleanup__(path: Path):
+def cleanup(path: Path):
 	if not path.exists():
 		return
 
@@ -19,7 +19,7 @@ def __cleanup__(path: Path):
 		return
 
 	for file in path.iterdir():
-		__cleanup__(file)
+		cleanup(file)
 	path.rmdir()
 
 
@@ -59,7 +59,7 @@ class CNNTrainer(ModelTrainer):
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		print('Cleaning up')
-		__cleanup__(Path(self.work_dir))
+		cleanup(Path(self.work_dir))
 
 	def __do_training__(self, train_data: pd.DataFrame, validate: bool) -> TrainResult:
 		if train_data.shape[0] == 0:
