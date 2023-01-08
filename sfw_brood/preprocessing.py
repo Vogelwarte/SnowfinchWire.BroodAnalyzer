@@ -5,12 +5,12 @@ import numpy as np
 import pandas as pd
 import soundfile as sf
 
-from .common.preprocessing.io import SnowfinchNestRecording
+from .common.preprocessing.io import SnowfinchNestRecording, load_recording_data, validate_recording_data
 from .common.preprocessing.io import number_from_recording_name
 
 
 @dataclass
-class TrainingDataset:
+class SnowfinchDataset:
 	files: list[Path]
 	brood_sizes: list[int]
 	brood_ages: list[float]
@@ -43,6 +43,27 @@ def prepare_training_data(
 	return bs_data, ba_data
 
 
+def prepare_training(
+		dataset: SnowfinchDataset, work_dir: str, slice_duration_sec: float, overlap_sec: float = 0.0
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+	bs_train_df = pd.DataFrame()
+	ba_train_df = pd.DataFrame()
+
+	for file in dataset.files:
+		print(f'Loading recording {file.stem}')
+		recording = load_recording_data(file)
+		validate_recording_data(recording)
+
+		bs_df, ba_df = prepare_training_data(
+			recording, dataset.brood_sizes, dataset.brood_ages, work_dir, slice_duration_sec, overlap_sec
+		)
+
+		bs_train_df = pd.concat([bs_train_df, bs_df])
+		ba_train_df = pd.concat([ba_train_df, ba_df])
+
+	return bs_train_df, ba_train_df
+
+
 def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overlap_sec = 0.0) -> list[np.ndarray]:
 	samples_per_slice = round(slice_len_sec * sample_rate)
 	overlap_samples = round(overlap_sec * sample_rate)
@@ -69,7 +90,7 @@ def __make_training_frame__(files: list[str], classes: list, match) -> pd.DataFr
 	return pd.DataFrame(data = data).set_index('file')
 
 
-def discover_training_data(data_dir: str) -> TrainingDataset:
+def discover_training_data(data_dir: str) -> SnowfinchDataset:
 	file_paths = []
 	brood_sizes = set()
 	brood_ages = set()
@@ -82,7 +103,7 @@ def discover_training_data(data_dir: str) -> TrainingDataset:
 		brood_size = number_from_recording_name(rec_title, label = 'BS', terminator = '-')
 		brood_sizes.add(brood_size)
 
-	return TrainingDataset(file_paths, list(brood_sizes), list(brood_ages))
+	return SnowfinchDataset(file_paths, list(brood_sizes), list(brood_ages))
 
 
 def filter_recording(recording: SnowfinchNestRecording, target_labels: list[str]) -> list[np.ndarray]:
