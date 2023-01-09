@@ -9,7 +9,8 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 		self.cnn = trained_cnn
 
 	def predict(self, recording_paths: list[str]) -> pd.DataFrame:
-		return self.cnn.predict(recording_paths, activation_layer = 'softmax', num_workers = 12)[0]
+		pred_result = self.cnn.predict(recording_paths, activation_layer = 'softmax', num_workers = 12)
+		return pred_result[0].reset_index()
 
 	def serialize(self, path: str):
 		self.cnn.save(path)

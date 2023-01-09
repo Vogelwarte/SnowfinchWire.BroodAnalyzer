@@ -16,7 +16,7 @@ class CNNValidator(ModelValidator):
 		pred_df = model.predict(rec_files)
 
 		y_pred = pred_df[classes].idxmax(axis = 1)
-		y_true = self.test_data.loc[pred_df.reset_index().file][classes].idxmax(axis = 1)
+		y_true = self.test_data.loc[pred_df.file][classes].idxmax(axis = 1)
 
 		if output:
 			report = classification_report(y_true, y_pred, output_dict = True)

@@ -16,7 +16,7 @@ class PrepareTrainingDataTests(TestCase):
 	CNN_SAMPLE_DURATION = 2
 	BROOD_SIZES = [2, 3, 4]
 	BROOD_AGES = list(np.linspace(3, 20, num = 18, dtype = 'int'))
-	DATA_PATH = '../../_data/test'
+	DATA_PATH = '_data/preproc_tests'
 
 	def setUp(self) -> None:
 		self.recording = SnowfinchNestRecording(
