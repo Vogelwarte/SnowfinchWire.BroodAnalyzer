@@ -14,10 +14,14 @@ class SnowfinchBroodCNNTests(TestCase):
 	def setUp(self) -> None:
 		self.classes = [str(i) for i in range(2, 5)]
 		self.sample_duration = 2.0
-		self.cnn = SnowfinchBroodCNN(trained_cnn = CNN(
-			architecture = 'resnet18', classes = self.classes,
-			single_target = True, sample_duration = self.sample_duration
-		))
+		self.cnn = SnowfinchBroodCNN(
+			trained_cnn = CNN(
+				architecture = 'resnet18', classes = self.classes,
+				single_target = True, sample_duration = self.sample_duration
+			),
+			arch = 'resnet18',
+			n_epochs = 0
+		)
 
 		self.work_dir = '_data/cnn_tests'
 		Path(self.work_dir).mkdir(parents = True, exist_ok = True)

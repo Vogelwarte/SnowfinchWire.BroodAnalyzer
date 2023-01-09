@@ -1,16 +1,26 @@
 import pandas as pd
-from opensoundscape.torch.models.cnn import CNN
+from opensoundscape.torch.models.cnn import CNN, load_model
 
-from sfw_brood.model import SnowfinchBroodClassifier
+from sfw_brood.model import SnowfinchBroodClassifier, ModelType, ModelLoader
 
 
 class SnowfinchBroodCNN(SnowfinchBroodClassifier):
-	def __init__(self, trained_cnn: CNN):
+	def __init__(self, trained_cnn: CNN, arch: str, n_epochs: int):
+		super().__init__(ModelType.CNN, { 'architecture': arch, 'training_epochs': n_epochs })
 		self.cnn = trained_cnn
 
 	def predict(self, recording_paths: list[str]) -> pd.DataFrame:
 		pred_result = self.cnn.predict(recording_paths, activation_layer = 'softmax', num_workers = 12)
 		return pred_result[0].reset_index()
 
-	def serialize(self, path: str):
+	def _serialize_(self, path: str):
 		self.cnn.save(path)
+
+
+class CNNLoader(ModelLoader):
+	def __init__(self):
+		super().__init__(ModelType.CNN)
+
+	def _deserialize_model_(self, path: str, meta_data: dict) -> SnowfinchBroodClassifier:
+		cnn = load_model(path)
+		return SnowfinchBroodCNN(cnn, arch = meta_data['architecture'], n_epochs = meta_data['training_epochs'])

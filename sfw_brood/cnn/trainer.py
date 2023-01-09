@@ -63,7 +63,10 @@ class CNNTrainer(ModelTrainer):
 			train_df, validation_df, epochs = 2, batch_size = 100,
 			save_path = f'{self.work_dir}/models', num_workers = 12
 		)
-		return SnowfinchBroodCNN(trained_cnn = load_model(f'{self.work_dir}/models/best.model'))
+		return SnowfinchBroodCNN(
+			trained_cnn = load_model(f'{self.work_dir}/models/best.model'),
+			arch = 'resnet18', n_epochs = 2
+		)
 
 	def __train_and_validate__(self, cnn: CNN, data: pd.DataFrame, out_dir: str) -> SnowfinchBroodCNN:
 		train_data, test_data = train_test_split(data, test_size = 0.2)
