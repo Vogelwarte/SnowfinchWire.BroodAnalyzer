@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, mock
 
 import numpy as np
 import pandas as pd
@@ -8,6 +8,7 @@ from opensoundscape.torch.models.cnn import CNN
 
 from sfw_brood.cnn.model import SnowfinchBroodCNN
 from sfw_brood.cnn.util import cleanup
+from sfw_brood.cnn.validator import CNNValidator
 
 
 class SnowfinchBroodCNNTests(TestCase):
@@ -80,12 +81,57 @@ class SnowfinchBroodCNNTests(TestCase):
 			self.assertEqual(self.sample_duration, duration)
 
 
-# TODO: mock CNN!
 class CNNValidatorTests(TestCase):
+	def setUp(self) -> None:
+		rec_count = 10
+		self.classes = ['2', '3', '4']
+		class_dict = { }
+
+		for cls in self.classes:
+			class_dict[cls] = np.zeros(rec_count)
+
+		for i in range(rec_count):
+			cls = np.random.choice(self.classes)
+			class_dict[cls][i] = 1
+
+		self.test_data = pd.DataFrame(
+			index = [f'{i}.wav' for i in range(rec_count)],
+			data = class_dict
+		)
+		self.test_data.index.name = 'file'
+
 	def test__accuracy_score(self):
-		# TODO: implement
-		pass
+		true_classes = self.test_data[self.classes].idxmax(axis = 1)
+		missed_rows = round(0.3 * len(self.test_data))
+
+		pred_data = { 'file': list(self.test_data.index) }
+		for cls in self.classes:
+			pred_data[cls] = list(self.test_data[cls])
+
+		for i in range(missed_rows):
+			pred_data[true_classes[i]][i] = 0
+			other_classes = self.classes.copy()
+			other_classes.remove(true_classes[i])
+			pred_data[np.random.choice(other_classes)][i] = 1
+
+		with mock.patch('sfw_brood.cnn.model.SnowfinchBroodCNN') as cnn_mock:
+			model_mock = cnn_mock.return_value
+			model_mock.predict.return_value = pd.DataFrame(data = pred_data)
+
+		cnn_validator = CNNValidator(self.test_data)
+		accuracy = cnn_validator.validate(model_mock)
+
+		self.assertEqual(1 - missed_rows / len(self.test_data), accuracy)
 
 	def test__handle_missing_predictions(self):
-		# TODO: implement
-		pass
+		data_indices = [i for i in range(len(self.test_data))]
+		missing_indices = np.random.choice(data_indices, size = 5)
+		pred_df = self.test_data.reset_index().drop(missing_indices)
+
+		with mock.patch('sfw_brood.cnn.model.SnowfinchBroodCNN') as cnn_mock:
+			model_mock = cnn_mock.return_value
+			model_mock.predict.return_value = pred_df
+
+		cnn_validator = CNNValidator(self.test_data)
+		accuracy = cnn_validator.validate(model_mock)
+		self.assertEqual(1.0, accuracy)
