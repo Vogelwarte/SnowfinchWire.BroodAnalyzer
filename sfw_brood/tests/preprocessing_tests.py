@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from sfw_brood.common.preprocessing.io import SnowfinchNestRecording
-from sfw_brood.preprocessing import prepare_training_data, slice_audio
+from sfw_brood.preprocessing import prepare_training_data, slice_audio, filter_recording
 
 
 class PrepareTrainingDataTests(TestCase):
@@ -158,3 +158,70 @@ class SliceAudioTests(TestCase):
 			s1 = slices[i]
 			s2 = slices[i + 1]
 			self.assertTrue(all(s1[-overlap_samples:] == s2[:overlap_samples]))
+
+
+class FilterRecordingTests(TestCase):
+	def setUp(self) -> None:
+		audio_len_sec = 120
+		self.recording = SnowfinchNestRecording(
+			title = 'mock_recording',
+			audio_data = np.random.random(48000 * audio_len_sec) * 2.0 - 1.0,
+			audio_sample_rate = 48000,
+			labels = self.__generate_labels__(audio_len_sec),
+			brood_size = 3,
+			brood_age = 12
+		)
+
+	def test__returns_list_of_arrays(self):
+		filtered_rec = filter_recording(self.recording, target_labels = ['feeding', 'contact'])
+		self.assertIsInstance(filtered_rec, list)
+		for audio in filtered_rec:
+			self.assertIsInstance(audio, np.ndarray)
+
+	def test__count_matches_labels_count(self):
+		target_labels = ['feeding', 'contact']
+		filtered_rec = filter_recording(self.recording, target_labels)
+		label_df = self.recording.labels
+		label_count = len(label_df[label_df.label.isin(target_labels)])
+		self.assertEqual(label_count, len(filtered_rec))
+
+	def test__returns_ordered_labelled_fragments(self):
+		target_labels = ['feeding', 'contact']
+		label_df = self.recording.labels
+		label_df = label_df[label_df.label.isin(target_labels)]
+
+		filtered_rec = filter_recording(self.recording, target_labels)
+
+		for i in range(len(filtered_rec)):
+			audio_event = label_df.iloc[i]
+			event_start = round(audio_event.start * self.recording.audio_sample_rate)
+			event_end = round(audio_event.end * self.recording.audio_sample_rate)
+			event_audio = self.recording.audio_data[event_start:event_end]
+			self.assertTrue(all(event_audio == filtered_rec[i]))
+
+	@staticmethod
+	def __generate_labels__(rec_len: float) -> pd.DataFrame:
+		starts = []
+		ends = []
+		labels = []
+
+		max_label_len = rec_len / 20
+		start = np.random.random() * max_label_len
+
+		while start < rec_len - max_label_len:
+			end = start + np.random.random() * max_label_len
+			label = np.random.choice(['contact', 'feeding', 'car'])
+
+			starts.append(start)
+			ends.append(end)
+			labels.append(label)
+
+			start = end + np.random.random() * max_label_len
+
+		return pd.DataFrame(
+			data = {
+				'start': starts,
+				'end': ends,
+				'label': labels
+			}
+		)
