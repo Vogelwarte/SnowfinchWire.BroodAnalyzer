@@ -31,7 +31,7 @@ class SnowfinchBroodClassifier(ABC):
 
 		meta_path = save_path.parent.joinpath('meta.json')
 		with open(meta_path, mode = 'wt') as meta_file:
-			json.dump(meta_data, meta_file)
+			json.dump(meta_data, meta_file, indent = 4)
 
 		model_path = save_path.parent.joinpath('model')
 		self._serialize_(str(model_path))

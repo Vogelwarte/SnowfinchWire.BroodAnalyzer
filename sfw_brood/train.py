@@ -32,6 +32,7 @@ if __name__ == '__main__':
 		dataset = train_dataset,
 		work_dir = train_work_dir,
 		sample_duration_sec = args.sample_duration,
+		sample_overlap_sec = args.sample_overlap,
 		cnn_arch = args.arch,
 		n_epochs = args.n_epochs,
 		n_workers = args.n_workers,

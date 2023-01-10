@@ -5,8 +5,8 @@ from sfw_brood.model import SnowfinchBroodClassifier, ModelType, ModelLoader
 
 
 class SnowfinchBroodCNN(SnowfinchBroodClassifier):
-	def __init__(self, trained_cnn: CNN, arch: str, n_epochs: int):
-		super().__init__(ModelType.CNN, { 'architecture': arch, 'training_epochs': n_epochs })
+	def __init__(self, trained_cnn: CNN, model_info: dict):
+		super().__init__(ModelType.CNN, model_info)
 		self.cnn = trained_cnn
 
 	def predict(self, recording_paths: list[str]) -> pd.DataFrame:
@@ -23,4 +23,4 @@ class CNNLoader(ModelLoader):
 
 	def _deserialize_model_(self, path: str, meta_data: dict) -> SnowfinchBroodClassifier:
 		cnn = load_model(path)
-		return SnowfinchBroodCNN(cnn, arch = meta_data['architecture'], n_epochs = meta_data['training_epochs'])
+		return SnowfinchBroodCNN(cnn, meta_data)

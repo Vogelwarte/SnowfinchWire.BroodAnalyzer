@@ -25,6 +25,8 @@ class CNNTrainer(ModelTrainer):
 		self.n_epochs = n_epochs
 		self.n_workers = n_workers
 		self.batch_size = batch_size
+		self.validation_size = 0.15
+		self.test_size = 0.2
 
 	def train_model_for_size(self, out_dir: str, validate = True):
 		return self.__do_training__(self.bs_train_data, out_dir, validate)
@@ -66,19 +68,31 @@ class CNNTrainer(ModelTrainer):
 		trained_model = self.__train_and_validate__(cnn, data, out_dir) if validate else self.__train_cnn__(cnn, data)
 		trained_model.serialize(f'{out_dir}/cnn.model')
 
-	def __train_cnn__(self, cnn: CNN, train_data: pd.DataFrame) -> SnowfinchBroodCNN:
-		train_df, validation_df = train_test_split(train_data, test_size = 0.15)
+	def __train_cnn__(self, cnn: CNN, train_data: pd.DataFrame, test_size = 0.0) -> SnowfinchBroodCNN:
+		train_df, validation_df = train_test_split(train_data, test_size = self.validation_size)
 		cnn.train(
 			train_df, validation_df, epochs = self.n_epochs, batch_size = self.batch_size,
 			save_path = f'{self.work_dir}/models', num_workers = self.n_workers
 		)
 
 		trained_cnn = load_model(f'{self.work_dir}/models/best.model')
-		return SnowfinchBroodCNN(trained_cnn, arch = self.cnn_arch, n_epochs = trained_cnn.current_epoch)
+		return SnowfinchBroodCNN(
+			trained_cnn,
+			model_info = {
+				'architecture': self.cnn_arch,
+				'train_epochs': trained_cnn.current_epoch,
+				'train_recordings': [rec.stem for rec in self.dataset.files],
+				'test_size': test_size,
+				'validation_size': self.validation_size,
+				'sample_duration_sec': self.sample_duration_sec,
+				'sample_overlap_sec': self.sample_overlap_sec,
+				'batch_size': self.batch_size
+			}
+		)
 
 	def __train_and_validate__(self, cnn: CNN, data: pd.DataFrame, out_dir: str) -> SnowfinchBroodCNN:
-		train_data, test_data = train_test_split(data, test_size = 0.2)
-		trained_model = self.__train_cnn__(cnn, train_data)
+		train_data, test_data = train_test_split(data, test_size = self.test_size)
+		trained_model = self.__train_cnn__(cnn, train_data, test_size = self.test_size)
 
 		validator = CNNValidator(test_data)
 		accuracy = validator.validate(trained_model, output = out_dir)
