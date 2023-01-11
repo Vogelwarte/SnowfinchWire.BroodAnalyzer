@@ -14,8 +14,9 @@ class CNNValidator(ModelValidator):
 		classes = list(self.test_data.columns)
 
 		pred_df = model.predict(rec_files)
+		pred_classes = set(classes).intersection(set(pred_df.columns))
 
-		y_pred = pred_df[classes].idxmax(axis = 1)
+		y_pred = pred_df[pred_classes].idxmax(axis = 1)
 		y_true = self.test_data.loc[pred_df.file][classes].idxmax(axis = 1)
 
 		if output:

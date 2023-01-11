@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from opensoundscape.torch.models.cnn import CNN, load_model
@@ -13,34 +14,44 @@ from .validator import CNNValidator
 
 class CNNTrainer(ModelTrainer):
 	def __init__(
-			self, dataset: SnowfinchDataset, work_dir: str,
+			self, train_dataset: SnowfinchDataset, work_dir: str,
 			sample_duration_sec: float, cnn_arch: str, n_epochs: int,
-			n_workers = 12, batch_size = 100, sample_overlap_sec = 0.0
+			n_workers = 12, batch_size = 100, sample_overlap_sec = 0.0,
+			test_dataset: Optional[SnowfinchDataset] = None
 	):
 		self.work_dir = work_dir
-		self.dataset = dataset
+		self.train_dataset = train_dataset
+		self.test_dataset = test_dataset
 		self.sample_duration_sec = sample_duration_sec
 		self.sample_overlap_sec = sample_overlap_sec
 		self.cnn_arch = cnn_arch
 		self.n_epochs = n_epochs
 		self.n_workers = n_workers
 		self.batch_size = batch_size
-		self.validation_size = 0.15
-		self.test_size = 0.2
 
-	def train_model_for_size(self, out_dir: str, validate = True):
-		return self.__do_training__(self.bs_train_data, out_dir, validate)
+	def train_model_for_size(self, out_dir: str):
+		return self.__do_training__(self.bs_train_data, self.bs_test_data, out_dir)
 
-	def train_model_for_age(self, out_dir: str, validate = True):
-		return self.__do_training__(self.ba_train_data, out_dir, validate)
+	def train_model_for_age(self, out_dir: str):
+		return self.__do_training__(self.ba_train_data, self.ba_test_data, out_dir)
 
 	def __enter__(self):
 		self.bs_train_data, self.ba_train_data = prepare_training(
-			self.dataset, self.work_dir, self.sample_duration_sec, overlap_sec = self.sample_overlap_sec
+			self.train_dataset, self.work_dir, self.sample_duration_sec, overlap_sec = self.sample_overlap_sec
 		)
 
 		print(f'Brood size training data shape: {self.bs_train_data.shape}')
 		print(f'Brood age training data shape: {self.ba_train_data.shape}')
+
+		if self.test_dataset:
+			self.bs_test_data, self.ba_test_data = prepare_training(
+				self.test_dataset, self.work_dir, self.sample_duration_sec, overlap_sec = self.sample_overlap_sec
+			)
+		else:
+			self.bs_test_data, self.ba_test_data = None, None
+
+		print(f'Brood size test data shape: {self.bs_test_data.shape}')
+		print(f'Brood age test data shape: {self.ba_test_data.shape}')
 
 		return self
 
@@ -48,15 +59,15 @@ class CNNTrainer(ModelTrainer):
 		print('Cleaning up')
 		cleanup(Path(self.work_dir))
 
-	def __do_training__(self, data: pd.DataFrame, out_dir: str, validate: bool):
-		if data.shape[0] == 0:
+	def __do_training__(self, train_data: pd.DataFrame, test_data: Optional[pd.DataFrame], out_dir: str):
+		if train_data.shape[0] == 0:
 			print('No training data available')
 			return
 
 		cnn = CNN(
 			architecture = self.cnn_arch,
 			sample_duration = self.sample_duration_sec,
-			classes = data.columns,
+			classes = train_data.columns,
 			single_target = True
 		)
 
@@ -65,13 +76,14 @@ class CNNTrainer(ModelTrainer):
 		out_path = Path(out_dir)
 		out_path.mkdir(parents = True, exist_ok = True)
 
-		trained_model = self.__train_and_validate__(cnn, data, out_dir) if validate else self.__train_cnn__(cnn, data)
+		trained_model = self.__train_and_validate__(cnn, train_data, test_data, out_dir)
 		trained_model.serialize(f'{out_dir}/cnn.model')
 
-	def __train_cnn__(self, cnn: CNN, train_data: pd.DataFrame, test_size = 0.0) -> SnowfinchBroodCNN:
-		train_df, validation_df = train_test_split(train_data, test_size = self.validation_size)
+	def __train_cnn__(
+			self, cnn: CNN, train_data: pd.DataFrame, validation_data: Optional[pd.DataFrame]
+	) -> SnowfinchBroodCNN:
 		cnn.train(
-			train_df, validation_df, epochs = self.n_epochs, batch_size = self.batch_size,
+			train_data, validation_df = validation_data, epochs = self.n_epochs, batch_size = self.batch_size,
 			save_path = f'{self.work_dir}/models', num_workers = self.n_workers
 		)
 
@@ -81,20 +93,24 @@ class CNNTrainer(ModelTrainer):
 			model_info = {
 				'architecture': self.cnn_arch,
 				'train_epochs': trained_cnn.current_epoch,
-				'train_recordings': [rec.stem for rec in self.dataset.files],
-				'test_size': test_size,
-				'validation_size': self.validation_size,
+				'train_recordings': [rec.stem for rec in self.train_dataset.files],
+				'test_recordings': [rec.stem for rec in self.test_dataset.files],
 				'sample_duration_sec': self.sample_duration_sec,
 				'sample_overlap_sec': self.sample_overlap_sec,
 				'batch_size': self.batch_size
 			}
 		)
 
-	def __train_and_validate__(self, cnn: CNN, data: pd.DataFrame, out_dir: str) -> SnowfinchBroodCNN:
-		train_data, test_data = train_test_split(data, test_size = self.test_size)
-		trained_model = self.__train_cnn__(cnn, train_data, test_size = self.test_size)
+	def __train_and_validate__(
+			self, cnn: CNN, train_data: pd.DataFrame, test_data: Optional[pd.DataFrame], out_dir: str
+	) -> SnowfinchBroodCNN:
+		if not train_data:
+			return self.__train_cnn__(cnn, train_data, None)
 
-		validator = CNNValidator(test_data)
+		test_df, validation_df = train_test_split(test_data, test_size = 0.3)
+		trained_model = self.__train_cnn__(cnn, train_data, validation_df)
+
+		validator = CNNValidator(test_df)
 		accuracy = validator.validate(trained_model, output = out_dir)
 		print(f'CNN accuracy: {accuracy}')
 

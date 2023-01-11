@@ -20,8 +20,7 @@ class SnowfinchBroodCNNTests(TestCase):
 				architecture = 'resnet18', classes = self.classes,
 				single_target = True, sample_duration = self.sample_duration
 			),
-			arch = 'resnet18',
-			n_epochs = 0
+			model_info = {}
 		)
 
 		self.work_dir = '_data/cnn_tests'

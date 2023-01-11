@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import soundfile as sf
+import matplotlib.pyplot as plt
 
 from .common.preprocessing.io import SnowfinchNestRecording, load_recording_data, validate_recording_data
 from .common.preprocessing.io import number_from_recording_name
@@ -13,7 +14,7 @@ from .common.preprocessing.io import number_from_recording_name
 class SnowfinchDataset:
 	files: list[Path]
 	brood_sizes: list[int]
-	brood_ages: list[float]
+	brood_ages: list[int]
 
 
 def prepare_training_data(
@@ -44,7 +45,7 @@ def prepare_training_data(
 
 
 def prepare_training(
-		dataset: SnowfinchDataset, work_dir: str, slice_duration_sec: float, overlap_sec: float = 0.0
+		dataset: SnowfinchDataset, work_dir: str, slice_duration_sec: float, overlap_sec: float = 0.0, balance = True
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
 	bs_train_df = pd.DataFrame()
 	ba_train_df = pd.DataFrame()
@@ -58,10 +59,34 @@ def prepare_training(
 			recording, dataset.brood_sizes, dataset.brood_ages, work_dir, slice_duration_sec, overlap_sec
 		)
 
+		print(f'Extracted {len(bs_df)} samples from recording', end = '\n\n')
+
 		bs_train_df = pd.concat([bs_train_df, bs_df])
 		ba_train_df = pd.concat([ba_train_df, ba_df])
 
+	if balance:
+		return balance_data(bs_train_df, dataset.brood_sizes), balance_data(ba_train_df, dataset.brood_ages)
+
 	return bs_train_df, ba_train_df
+
+
+def balance_data(data: pd.DataFrame, classes: list[int], tolerance = 0.2) -> pd.DataFrame:
+	data_per_class = []
+
+	for cls in classes:
+		data_per_class.append(data[data[str(cls)] == 1])
+
+	cls_counts = [len(df) for df in data_per_class]
+	sample_size = round(min(cls_counts) * (1.0 + tolerance))
+
+	balanced_df = pd.DataFrame()
+
+	for i in range(len(data_per_class)):
+		if len(data_per_class[i]) > sample_size:
+			data_per_class[i] = data_per_class[i].sample(n = sample_size)
+		balanced_df = pd.concat([balanced_df, data_per_class[i]])
+
+	return balanced_df
 
 
 def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overlap_sec = 0.0) -> list[np.ndarray]:

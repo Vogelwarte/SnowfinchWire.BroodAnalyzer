@@ -82,11 +82,11 @@ class ModelLoader(ABC):
 
 class ModelTrainer(ABC):
 	@abstractmethod
-	def train_model_for_size(self, out_dir: str, validate = True):
+	def train_model_for_size(self, out_dir: str):
 		pass
 
 	@abstractmethod
-	def train_model_for_age(self, out_dir: str, validate = False):
+	def train_model_for_age(self, out_dir: str):
 		pass
 
 
