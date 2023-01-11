@@ -6,7 +6,7 @@ permissions:
   contents: read
 
 env:
-  DATA_PATH: ~/Snowfinch-acoustics/AI_training_recordings
+  DATA_PATH: /home/falco_ghrunner/Snowfinch-acoustics/AI_training_recordings
 
 jobs:
   train:
@@ -33,7 +33,7 @@ jobs:
           tree -a "$DATA_PATH"
       - name: Run training
         run: |
-          python -m sfw_brood.train
+          python -m sfw_brood.train -n 1
       - name: Archive trained model
         uses: actions/upload-artifact@v3
         with:
