@@ -21,7 +21,7 @@ if __name__ == '__main__':
 	arg_parser.add_argument('-t', '--target', type = str, choices = ['size', 'age', 'all'], default = 'all')
 	args = arg_parser.parse_args()
 
-	train_data_path = os.getenv('DATA_PATH', default = '_data.train')
+	train_data_path = os.getenv('DATA_PATH', default = '_data.test')
 	sample_duration = 2.0
 	train_work_dir = '_training'
 

@@ -94,7 +94,7 @@ class CNNTrainer(ModelTrainer):
 				'architecture': self.cnn_arch,
 				'train_epochs': trained_cnn.current_epoch,
 				'train_recordings': [rec.stem for rec in self.train_dataset.files],
-				'test_recordings': [rec.stem for rec in self.test_dataset.files],
+				'test_recordings': [rec.stem for rec in self.test_dataset.files] if self.test_dataset else [],
 				'sample_duration_sec': self.sample_duration_sec,
 				'sample_overlap_sec': self.sample_overlap_sec,
 				'batch_size': self.batch_size
