@@ -1,0 +1,3 @@
+[submodule "sfw_brood/common"]
+	path = sfw_brood/common
+	url = https://github.com/Vogelwarte/SnowfinchWire.Common.git
