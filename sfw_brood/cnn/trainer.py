@@ -47,11 +47,11 @@ class CNNTrainer(ModelTrainer):
 			self.bs_test_data, self.ba_test_data = prepare_training(
 				self.test_dataset, self.work_dir, self.sample_duration_sec, overlap_sec = self.sample_overlap_sec
 			)
+
+			print(f'Brood size test data shape: {self.bs_test_data.shape}')
+			print(f'Brood age test data shape: {self.ba_test_data.shape}')
 		else:
 			self.bs_test_data, self.ba_test_data = None, None
-
-		print(f'Brood size test data shape: {self.bs_test_data.shape}')
-		print(f'Brood age test data shape: {self.ba_test_data.shape}')
 
 		return self
 
