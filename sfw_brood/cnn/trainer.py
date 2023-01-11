@@ -104,7 +104,7 @@ class CNNTrainer(ModelTrainer):
 	def __train_and_validate__(
 			self, cnn: CNN, train_data: pd.DataFrame, test_data: Optional[pd.DataFrame], out_dir: str
 	) -> SnowfinchBroodCNN:
-		if not train_data:
+		if test_data is None:
 			return self.__train_cnn__(cnn, train_data, None)
 
 		test_df, validation_df = train_test_split(test_data, test_size = 0.3)
