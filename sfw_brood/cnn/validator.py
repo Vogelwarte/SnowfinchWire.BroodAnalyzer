@@ -6,8 +6,9 @@ from sfw_brood.model import ModelValidator, SnowfinchBroodClassifier
 
 
 class CNNValidator(ModelValidator):
-	def __init__(self, test_data: pd.DataFrame):
+	def __init__(self, test_data: pd.DataFrame, label: str):
 		self.test_data = test_data
+		self.label = label
 
 	def validate(self, model: SnowfinchBroodClassifier, output = '') -> float:
 		rec_files = list(self.test_data.index)
@@ -24,6 +25,8 @@ class CNNValidator(ModelValidator):
 			report_df = pd.DataFrame(report).transpose()
 
 			ConfusionMatrixDisplay.from_predictions(y_true, y_pred)
+			plt.xlabel(f'Predicted {self.label}')
+			plt.ylabel(f'True {self.label}')
 
 			if output == 'show':
 				plt.show()

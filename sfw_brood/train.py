@@ -1,9 +1,8 @@
 import argparse
-import os
+import json
 from datetime import datetime
 
 from sfw_brood.cnn.trainer import CNNTrainer
-from sfw_brood.preprocessing import discover_training_data
 
 
 def make_time_str() -> str:
@@ -12,34 +11,38 @@ def make_time_str() -> str:
 
 if __name__ == '__main__':
 	arg_parser = argparse.ArgumentParser()
+	arg_parser.add_argument('data_path', type = str)
+	arg_parser.add_argument('audio_path', type = str)
 	arg_parser.add_argument('-a', '--arch', type = str, default = 'resnet18')
 	arg_parser.add_argument('-d', '--sample-duration', type = float, default = 2.0)
 	arg_parser.add_argument('-n', '--n-epochs', type = int, default = 10)
 	arg_parser.add_argument('-w', '--n-workers', type = int, default = 12)
 	arg_parser.add_argument('-b', '--batch-size', type = int, default = 100)
-	arg_parser.add_argument('-o', '--sample-overlap', type = float, default = 0.0)
+	arg_parser.add_argument('-l', '--learning-rate', type = float, default = 0.001)
+	arg_parser.add_argument('-e', '--event', type = str, choices = ['feeding', 'contact', 'all'], default = 'all')
 	arg_parser.add_argument('-t', '--target', type = str, choices = ['size', 'age', 'all'], default = 'all')
+	arg_parser.add_argument('-c', '--split-config-path', type = str, default = 'data-split.json')
 	args = arg_parser.parse_args()
 
-	train_data_path = os.getenv('DATA_PATH', default = '_data.test')
-	sample_duration = 2.0
-	train_work_dir = '_training'
-
-	print(f'Collecting train data from directory {train_data_path}')
-	train_dataset = discover_training_data(train_data_path)
-	# test_dataset = discover_training_data('_data.test')
+	with open(args.split_config_path, mode = 'rt') as split_file:
+		data_split_config = json.load(split_file)
 
 	trainer = CNNTrainer(
-		train_dataset = train_dataset,
-		# test_dataset = test_dataset,
-		work_dir = train_work_dir,
+		data_path = args.data_path,
+		audio_path = args.audio_path,
+		train_recordings = data_split_config['train'],
+		validation_recordings = data_split_config['validation'],
+		test_recordings = data_split_config['test'],
+		work_dir = '_training',
 		sample_duration_sec = args.sample_duration,
-		sample_overlap_sec = args.sample_overlap,
 		cnn_arch = args.arch,
 		n_epochs = args.n_epochs,
 		n_workers = args.n_workers,
-		batch_size = args.batch_size
+		batch_size = args.batch_size,
+		learn_rate = args.learning_rate,
+		target_label = None if args.event == 'all' else args.event
 	)
+
 	with trainer:
 		try:
 			if args.target == 'size':

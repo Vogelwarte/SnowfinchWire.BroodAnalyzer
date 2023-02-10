@@ -31,9 +31,12 @@ jobs:
       - name: Display training data
         run: |
           tree -a "$DATA_PATH"
+      - name: Prepare training data
+        run: |
+          python -m sfw_brood.export_data -s 2.0 -o 1.0 -w audio-work "$DATA_PATH" data.export
       - name: Run training
         run: |
-          python -m sfw_brood.train -n 1
+          python -m sfw_brood.train -n 1 data.export audio-work
       - name: Archive trained model
         uses: actions/upload-artifact@v3
         with:
