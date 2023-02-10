@@ -1,6 +1,32 @@
 name: "Train model"
 
-on: [ workflow_dispatch ]
+on:
+  workflow_dispatch:
+    inputs:
+      cnn_arch:
+        description: CNN architecture
+        required: true
+        default: resnet18
+      learning_rate:
+        description: Learning rate
+        required: true
+        default: 0.001
+      batch_size:
+        description: Batch size
+        required: true
+        default: 100
+      event:
+        description: Target event
+        required: true
+        default: all
+      n_epochs:
+        description: Training epochs count
+        required: true
+        default: 20
+      target:
+        description: Predition target
+        required: true
+        default: all
 
 permissions:
   contents: read
@@ -36,7 +62,11 @@ jobs:
           python -m sfw_brood.export_data -s 2.0 -o 1.0 -w audio-work "$DATA_PATH" data.export
       - name: Run training
         run: |
-          python -m sfw_brood.train -n 1 data.export/s2.0-o1.0 audio-work/s2.0-o1.0
+          python -m sfw_brood.train \
+          -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} -d 2.0 \
+          -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
+          -e ${{ github.event.inputs.event }} -r ${{ github.event.inputs.target }} \
+          data.export/s2.0-o1.0 audio-work/s2.0-o1.0
       - name: Archive trained model
         uses: actions/upload-artifact@v3
         with:
