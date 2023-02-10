@@ -61,9 +61,9 @@ def __to_dbfs__(audio: np.ndarray) -> np.ndarray:
 
 def prepare_training_data(
 		recording: SnowfinchNestRecording, brood_sizes: list[int], brood_ages: list[float],
-		work_dir: str, slice_duration_sec: float, overlap_sec: float = 0.0
+		work_dir: Union[str, Path], slice_duration_sec: float, overlap_sec: float = 0.0
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-	slices_dir = Path(f'{work_dir}')
+	slices_dir = Path(work_dir)
 	slices_dir.mkdir(exist_ok = True, parents = True)
 
 	intereseting_audio = filter_recording(recording, target_labels = ['feeding', 'contact'])
@@ -102,7 +102,7 @@ def prepare_training_data(
 
 
 def prepare_training(
-		dataset: SnowfinchDataset, work_dir: str, slice_duration_sec: float, overlap_sec: float = 0.0
+		dataset: SnowfinchDataset, work_dir: Union[str, Path], slice_duration_sec: float, overlap_sec: float = 0.0
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
 	bs_train_df = pd.DataFrame()
 	ba_train_df = pd.DataFrame()

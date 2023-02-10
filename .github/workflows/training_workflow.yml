@@ -59,14 +59,20 @@ jobs:
           tree -a "$DATA_PATH"
       - name: Prepare training data
         run: |
-          python -m sfw_brood.export_data -s 2.0 -o 1.0 -w audio-work "$DATA_PATH" data.export
+          python -m sfw_brood.export_data -s 2.0 -o 1.0 -w audio-work "$DATA_PATH" data-export
+      - name: Cache training data
+        uses: actions/cache@v3
+        with:
+          path: |
+            data-export
+            audio-work
       - name: Run training
         run: |
           python -m sfw_brood.train \
           -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} -d 2.0 \
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
           -e ${{ github.event.inputs.event }} -t ${{ github.event.inputs.target }} \
-          data.export/s2.0-o1.0 audio-work/s2.0-o1.0
+          data-export/s2.0-o1.0 audio-work/s2.0-o1.0
       - name: Archive trained model
         uses: actions/upload-artifact@v3
         with:
