@@ -63,6 +63,7 @@ jobs:
       - name: Cache training data
         uses: actions/cache@v3
         with:
+          key: s2.0-o1.0
           path: |
             data-export
             audio-work
