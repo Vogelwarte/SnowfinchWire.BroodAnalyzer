@@ -36,7 +36,7 @@ jobs:
           python -m sfw_brood.export_data -s 2.0 -o 1.0 -w audio-work "$DATA_PATH" data.export
       - name: Run training
         run: |
-          python -m sfw_brood.train -n 1 data.export audio-work
+          python -m sfw_brood.train -n 1 data.export/s2.0-o1.0 audio-work/s2.0-o1.0
       - name: Archive trained model
         uses: actions/upload-artifact@v3
         with:
