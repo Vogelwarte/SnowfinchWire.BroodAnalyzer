@@ -78,41 +78,6 @@ class CNNTrainer(ModelTrainer):
 			self.ba_train_data, self.ba_test_data, self.ba_val_data, out_dir, label = 'brood age'
 		)
 
-	# def __enter__(self):
-	# 	self.bs_train_data, self.ba_train_data = prepare_training(
-	# 		self.train_dataset, self.work_dir, self.sample_duration_sec, overlap_sec = self.sample_overlap_sec
-	# 	)
-	#
-	# 	print(f'Brood size training data shape: {self.bs_train_data.shape}')
-	# 	print(f'Brood age training data shape: {self.ba_train_data.shape}')
-	#
-	# 	if self.test_dataset:
-	# 		self.bs_test_data, self.ba_test_data = prepare_training(
-	# 			self.test_dataset, self.work_dir, self.sample_duration_sec, overlap_sec = self.sample_overlap_sec
-	# 		)
-	#
-	# 		print(f'Brood size test data shape: {self.bs_test_data.shape}')
-	# 		print(f'Brood age test data shape: {self.ba_test_data.shape}')
-	# 	else:
-	# 		self.bs_test_data, self.ba_test_data = None, None
-	#
-	# 	if self.validation_dataset:
-	# 		self.bs_val_data, self.ba_val_data = prepare_training(
-	# 			self.validation_dataset, self.work_dir, self.sample_duration_sec,
-	# 			overlap_sec = self.sample_overlap_sec, target_label = self.target_label
-	# 		)
-	#
-	# 		print(f'Brood size validation data shape: {self.bs_val_data.shape}')
-	# 		print(f'Brood age validation data shape: {self.ba_val_data.shape}')
-	# 	else:
-	# 		self.bs_val_data, self.ba_val_data = None, None
-	#
-	# 	return self
-
-	# def __exit__(self, exc_type, exc_val, exc_tb):
-	# 	print('Cleaning up')
-	# 	cleanup(Path(self.work_dir))
-
 	def __do_training__(
 			self, train_data: pd.DataFrame, test_data: Optional[pd.DataFrame],
 			validation_data: Optional[pd.DataFrame], out_dir: str, label: str
@@ -154,6 +119,7 @@ class CNNTrainer(ModelTrainer):
 				'train_epochs': trained_cnn.current_epoch,
 				'data': self.data_path,
 				'train_recordings': self.train_recordings,
+				'validation_recordings': self.validation_recordings,
 				'test_recordings': self.test_recordings if self.test_recordings else [],
 				'sample_duration_sec': self.sample_duration_sec,
 				'batch_size': self.batch_size
