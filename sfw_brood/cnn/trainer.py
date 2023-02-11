@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from opensoundscape.torch.models.cnn import CNN, load_model
+from opensoundscape.torch.models.cnn import CNN, InceptionV3, load_model
 
 from sfw_brood.model import ModelTrainer
 from sfw_brood.preprocessing import balance_data
@@ -86,21 +86,27 @@ class CNNTrainer(ModelTrainer):
 			print('No training data available')
 			return
 
-		cnn = CNN(
-			architecture = self.cnn_arch,
-			sample_duration = self.sample_duration_sec,
-			classes = train_data.columns,
-			single_target = True
-		)
-		cnn.optimizer_params['lr'] = self.learn_rate
-
 		print('Training CNN...')
+		cnn = self.__setup_cnn__(classes = train_data.columns)
 
 		out_path = Path(out_dir)
 		out_path.mkdir(parents = True, exist_ok = True)
 
 		trained_model = self.__train_and_validate__(cnn, train_data, test_data, validation_data, out_dir, label)
 		trained_model.serialize(f'{out_dir}/cnn.model')
+
+	def __setup_cnn__(self, classes):
+		if self.cnn_arch == 'inception_v3':
+			cnn = InceptionV3(classes = classes, sample_duration = self.sample_duration_sec, single_target = True)
+		else:
+			cnn = CNN(
+				architecture = self.cnn_arch,
+				sample_duration = self.sample_duration_sec,
+				classes = classes,
+				single_target = True
+			)
+		cnn.optimizer_params['lr'] = self.learn_rate
+		return cnn
 
 	def __train_cnn__(
 			self, cnn: CNN, train_data: pd.DataFrame, validation_data: Optional[pd.DataFrame]

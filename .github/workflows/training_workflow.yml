@@ -6,7 +6,15 @@ on:
       cnn_arch:
         description: CNN architecture
         required: true
-        default: resnet18
+        type: choice
+        options:
+          - resnet18
+          - resnet50
+          - vgg11_bn
+          - resnet101
+          - densenet121
+          - inception_v3
+        default: resnet50
       learning_rate:
         description: Learning rate
         required: true
@@ -17,6 +25,11 @@ on:
         default: 100
       event:
         description: Target event
+        type: choice
+        options:
+          - feeding
+          - contact
+          - all
         required: true
         default: all
       n_epochs:
@@ -26,6 +39,11 @@ on:
       target:
         description: Predition target
         required: true
+        type: choice
+        options:
+          - size
+          - age
+          - all
         default: all
 
 permissions:
