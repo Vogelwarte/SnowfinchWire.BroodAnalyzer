@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import soundfile as sf
 
+from sklearn.preprocessing import OneHotEncoder
+
 from .common.preprocessing.io import SnowfinchNestRecording, load_recording_data, validate_recording_data
 from .common.preprocessing.io import number_from_recording_name
 
@@ -158,6 +160,30 @@ def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overl
 		end = min(len(audio), start + samples_per_slice)
 
 	return slices
+
+
+def group_ages(age_df: pd.DataFrame, groups: list[tuple[int, int]]) -> pd.DataFrame:
+	def map_age(age: int) -> str:
+		for low, high in groups:
+			if low <= age <= high:
+				return f'{low}-{high}'
+		return 'none'
+
+	age_group_df = age_df[['file', 'class']]
+	age_group_df['class'] = age_group_df['class'].apply(map_age)
+	age_group_df = age_group_df.sort_values(by = 'class').reset_index().drop(columns = 'index')
+
+	groups_encoder = OneHotEncoder()
+	groups_1hot = groups_encoder.fit_transform(age_group_df['class'].values.reshape(-1, 1))
+	groups_1hot_df = pd.DataFrame(
+		data = groups_1hot.toarray(),
+		columns = groups_encoder.categories_
+	)
+
+	group_1hot_columns = [col[0] for col in groups_1hot_df.columns]
+	age_group_df[group_1hot_columns] = groups_1hot_df[group_1hot_columns]
+
+	return age_group_df
 
 
 def __make_training_frame__(

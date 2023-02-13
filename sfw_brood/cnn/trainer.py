@@ -5,7 +5,7 @@ import pandas as pd
 from opensoundscape.torch.models.cnn import CNN, InceptionV3, load_model
 
 from sfw_brood.model import ModelTrainer
-from sfw_brood.preprocessing import balance_data
+from sfw_brood.preprocessing import balance_data, group_ages
 from .model import SnowfinchBroodCNN
 from .util import cleanup
 from .validator import CNNValidator
@@ -27,39 +27,46 @@ def select_recordings(data: pd.DataFrame, recordings: list[str], audio_path: str
 class CNNTrainer(ModelTrainer):
 	def __init__(
 			self, data_path: str, audio_path: str, work_dir: str,
-			sample_duration_sec: float, train_recordings: list[str],
-			validation_recordings: list[str], test_recordings: list[str],
+			sample_duration_sec: float, rec_split: dict,
 			cnn_arch: str, n_epochs: int, n_workers = 12, batch_size = 100, learn_rate = 0.001,
-			target_label: Optional[str] = None, remove_silence: bool = True
+			target_label: Optional[str] = None, remove_silence: bool = True,
+			age_groups: Optional[list[tuple[int, int]]] = None
 	):
 		self.cnn_arch = cnn_arch
 		self.n_epochs = n_epochs
 		self.n_workers = n_workers
 		self.batch_size = batch_size
 		self.learn_rate = learn_rate
-		self.target_label = target_label
+		self.target_labels = ['feeding', 'contact'] if target_label is None else [target_label]
 		self.remove_silence = remove_silence
 		self.sample_duration_sec = sample_duration_sec
 		self.work_dir = Path(work_dir)
 		self.data_path = data_path
-		self.train_recordings = train_recordings
-		self.test_recordings = test_recordings
-		self.validation_recordings = validation_recordings
+		self.data_split = rec_split
 
 		bs_data = pd.read_csv(f'{data_path}/brood-size.csv')
-		bs_data = bs_data[~bs_data['is_silence'] & (bs_data['event'] == 'contact')]
+		bs_data = bs_data[~bs_data['is_silence'] & (bs_data['event'].isin(self.target_labels))]
 
 		ba_data = pd.read_csv(f'{data_path}/brood-age.csv')
-		ba_data = ba_data[~ba_data['is_silence'] & (ba_data['event'] == 'contact')]
+		ba_data = ba_data[~ba_data['is_silence'] & (ba_data['event'].isin(self.target_labels))]
+		if age_groups:
+			ba_data = group_ages(ba_data, groups = age_groups)
 
-		self.bs_train_data = select_recordings(bs_data, train_recordings, audio_path)
-		self.ba_train_data = select_recordings(ba_data, train_recordings, audio_path)
+		self.bs_train_data = select_recordings(bs_data, rec_split['BS']['train'], audio_path)
+		self.bs_val_data = select_recordings(bs_data, rec_split['BS']['validation'], audio_path)
+		self.bs_test_data = select_recordings(bs_data, rec_split['BS']['test'], audio_path)
+		print(f'\nSize data:')
+		print(f'\ttrain: {self.bs_train_data.shape}')
+		print(f'\tvalidation: {self.bs_val_data.shape}')
+		print(f'\ttest: {self.bs_test_data.shape}')
 
-		self.bs_val_data = select_recordings(bs_data, validation_recordings, audio_path)
-		self.ba_val_data = select_recordings(ba_data, validation_recordings, audio_path)
-
-		self.bs_test_data = select_recordings(bs_data, test_recordings, audio_path)
-		self.ba_test_data = select_recordings(ba_data, test_recordings, audio_path)
+		self.ba_train_data = select_recordings(ba_data, rec_split['BA']['train'], audio_path)
+		self.ba_val_data = select_recordings(ba_data, rec_split['BA']['validation'], audio_path)
+		self.ba_test_data = select_recordings(ba_data, rec_split['BA']['test'], audio_path)
+		print(f'\nAge data:')
+		print(f'\ttrain: {self.ba_train_data.shape}')
+		print(f'\tvalidation: {self.ba_val_data.shape}')
+		print(f'\ttest: {self.ba_test_data.shape}')
 
 	def __enter__(self):
 		self.work_dir.mkdir(parents = True, exist_ok = True)
@@ -124,11 +131,10 @@ class CNNTrainer(ModelTrainer):
 				'architecture': self.cnn_arch,
 				'train_epochs': trained_cnn.current_epoch,
 				'data': self.data_path,
-				'train_recordings': self.train_recordings,
-				'validation_recordings': self.validation_recordings,
-				'test_recordings': self.test_recordings if self.test_recordings else [],
+				'data_split': self.data_split,
 				'sample_duration_sec': self.sample_duration_sec,
-				'batch_size': self.batch_size
+				'batch_size': self.batch_size,
+				'events': self.target_labels
 			}
 		)
 

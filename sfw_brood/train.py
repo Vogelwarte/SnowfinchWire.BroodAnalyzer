@@ -1,12 +1,30 @@
 import argparse
 import json
 from datetime import datetime
+from typing import Optional
 
 from sfw_brood.cnn.trainer import CNNTrainer
 
 
 def make_time_str() -> str:
 	return datetime.now().isoformat()[:19].replace(':', '-')
+
+
+def parse_age_groups(age_groups: str) -> Optional[list[tuple[int, int]]]:
+	if not age_groups:
+		return None
+
+	out_groups = []
+
+	for age_group in age_groups.split(','):
+		try:
+			age_range = age_group.split('-')
+			out_groups.append((int(age_range[0]), int(age_range[1])))
+		except Exception as parse_error:
+			print(f'Invalid age groups: {parse_error}')
+			exit(1)
+
+	return out_groups
 
 
 if __name__ == '__main__':
@@ -22,6 +40,7 @@ if __name__ == '__main__':
 	arg_parser.add_argument('-e', '--event', type = str, choices = ['feeding', 'contact', 'all'], default = 'all')
 	arg_parser.add_argument('-t', '--target', type = str, choices = ['size', 'age', 'all'], default = 'all')
 	arg_parser.add_argument('-c', '--split-config-path', type = str, default = 'data-split.json')
+	arg_parser.add_argument('--group-ages', type = str, default = '')
 	args = arg_parser.parse_args()
 
 	with open(args.split_config_path, mode = 'rt') as split_file:
@@ -30,9 +49,7 @@ if __name__ == '__main__':
 	trainer = CNNTrainer(
 		data_path = args.data_path,
 		audio_path = args.audio_path,
-		train_recordings = data_split_config['train'],
-		validation_recordings = data_split_config['validation'],
-		test_recordings = data_split_config['test'],
+		rec_split = data_split_config,
 		work_dir = '_training',
 		sample_duration_sec = args.sample_duration,
 		cnn_arch = args.arch,
@@ -40,7 +57,8 @@ if __name__ == '__main__':
 		n_workers = args.n_workers,
 		batch_size = args.batch_size,
 		learn_rate = args.learning_rate,
-		target_label = None if args.event == 'all' else args.event
+		target_label = None if args.event == 'all' else args.event,
+		age_groups = parse_age_groups(args.group_ages)
 	)
 
 	with trainer:
