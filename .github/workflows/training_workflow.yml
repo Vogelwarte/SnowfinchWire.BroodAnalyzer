@@ -45,6 +45,11 @@ on:
           - age
           - all
         default: all
+      age_groups:
+        description: Wide classes for brood age
+        required: false
+        type: string
+        default: 0-6,7-11,12-14,15-18
 
 permissions:
   contents: read
