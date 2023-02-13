@@ -50,6 +50,11 @@ on:
         required: false
         type: string
         default: 0-6,7-11,12-14,15-18
+      samples_per_class:
+        description: Target count of samples per class
+        required: true
+        type: string
+        default: min
 
 permissions:
   contents: read
@@ -59,7 +64,7 @@ env:
 
 jobs:
   train:
-    name: "Train (${{ github.event.inputs.cnn_arch }},${{ github.event.inputs.learning_rate }},${{ github.event.inputs.batch_size }}) for ${{ github.event.inputs.target }}"
+    name: "Train ${{ github.event.inputs.cnn_arch }}(lr${{ github.event.inputs.learning_rate }}, bs${{ github.event.inputs.batch_size }}) for ${{ github.event.inputs.target }}"
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3

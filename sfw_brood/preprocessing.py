@@ -7,6 +7,7 @@ import pandas as pd
 import soundfile as sf
 
 from sklearn.preprocessing import OneHotEncoder
+from opensoundscape.data_selection import resample
 
 from .common.preprocessing.io import SnowfinchNestRecording, load_recording_data, validate_recording_data
 from .common.preprocessing.io import number_from_recording_name
@@ -127,23 +128,36 @@ def prepare_training(
 	return bs_train_df, ba_train_df
 
 
-def balance_data(data: pd.DataFrame, classes: list[str], tolerance = 0.2) -> pd.DataFrame:
-	data_per_class = []
+def balance_data(data: pd.DataFrame, classes: list[str], samples_per_class: str) -> pd.DataFrame:
+	class_samples = [np.count_nonzero(data[cls]) for cls in classes]
 
-	for cls in classes:
-		data_per_class.append(data[data[cls] == 1])
+	if samples_per_class == 'min':
+		return resample(data, n_samples_per_class = np.min(class_samples))
+	elif samples_per_class == 'max':
+		return resample(data, n_samples_per_class = np.max(class_samples))
+	elif samples_per_class == 'mean':
+		return resample(data, n_samples_per_class = round(np.mean(class_samples)))
+	else:
+		return resample(data, n_samples_per_class = int(samples_per_class))
 
-	cls_counts = [len(df) for df in data_per_class]
-	sample_size = round(min(cls_counts) * (1.0 + tolerance))
 
-	balanced_df = pd.DataFrame()
-
-	for i in range(len(data_per_class)):
-		if len(data_per_class[i]) > sample_size:
-			data_per_class[i] = data_per_class[i].sample(n = sample_size)
-		balanced_df = pd.concat([balanced_df, data_per_class[i]])
-
-	return balanced_df
+#
+# data_per_class = []
+#
+# for cls in classes:
+# 	data_per_class.append(data[data[cls] == 1])
+#
+# cls_counts = [len(df) for df in data_per_class]
+# sample_size = round(min(cls_counts) * (1.0 + tolerance))
+#
+# balanced_df = pd.DataFrame()
+#
+# for i in range(len(data_per_class)):
+# 	if len(data_per_class[i]) > sample_size:
+# 		data_per_class[i] = data_per_class[i].sample(n = sample_size)
+# 	balanced_df = pd.concat([balanced_df, data_per_class[i]])
+#
+# return balanced_df
 
 
 def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overlap_sec = 0.0) -> list[np.ndarray]:
