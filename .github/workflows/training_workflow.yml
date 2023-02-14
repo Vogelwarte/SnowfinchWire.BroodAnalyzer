@@ -35,7 +35,7 @@ on:
       n_epochs:
         description: Training epochs count
         required: true
-        default: 20
+        default: 50
       target:
         description: Predition target
         required: true
@@ -54,7 +54,7 @@ on:
         description: Target count of samples per class
         required: true
         type: string
-        default: min
+        default: max
       data_split_config:
         description: Data split configuration file
         required: true
