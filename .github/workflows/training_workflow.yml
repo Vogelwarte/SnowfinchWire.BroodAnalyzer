@@ -60,7 +60,7 @@ on:
         required: true
         type: choice
         options:
-          - data-split-bs3-4-ba0-6-9-12-15.json
+          - data-split-bs-all-ba0-6-9-12-15.json
           - data-split-bs3-4-ba0-7-12-15.json
 
 permissions:
