@@ -11,6 +11,19 @@ from .util import cleanup
 from .validator import CNNValidator
 
 
+def select_recordings(data: pd.DataFrame, recordings: list[str], audio_path: str, cls_samples: str) -> pd.DataFrame:
+	def extract_rec_name(file_name: str) -> str:
+		end_idx = file_name.rindex('__')
+		return file_name[:end_idx]
+
+	selection_df = data[data['file'].apply(extract_rec_name).isin(recordings)]
+	selection_df['file'] = audio_path + '/' + selection_df['file']
+	selection_df = selection_df.set_index('file')
+
+	classes = [str(cls) for cls in sorted(selection_df['class'].unique())]
+	return balance_data(selection_df[classes], classes, cls_samples)
+
+
 class CNNTrainer(ModelTrainer):
 	def __init__(
 			self, data_path: str, audio_path: str, work_dir: str,
@@ -40,17 +53,17 @@ class CNNTrainer(ModelTrainer):
 		if age_groups:
 			ba_data = group_ages(ba_data, groups = age_groups)
 
-		self.bs_train_data = self.__select_recordings__(bs_data, rec_split['BS']['train'], audio_path)
-		self.bs_val_data = self.__select_recordings__(bs_data, rec_split['BS']['validation'], audio_path)
-		self.bs_test_data = self.__select_recordings__(bs_data, rec_split['BS']['test'], audio_path)
+		self.bs_train_data = select_recordings(bs_data, rec_split['BS']['train'], audio_path, self.samples_per_class)
+		self.bs_val_data = select_recordings(bs_data, rec_split['BS']['validation'], audio_path, cls_samples = 'min')
+		self.bs_test_data = select_recordings(bs_data, rec_split['BS']['test'], audio_path, cls_samples = 'min')
 		print(f'\nSize data:')
 		print(f'\ttrain: {self.bs_train_data.shape}')
 		print(f'\tvalidation: {self.bs_val_data.shape}')
 		print(f'\ttest: {self.bs_test_data.shape}')
 
-		self.ba_train_data = self.__select_recordings__(ba_data, rec_split['BA']['train'], audio_path)
-		self.ba_val_data = self.__select_recordings__(ba_data, rec_split['BA']['validation'], audio_path)
-		self.ba_test_data = self.__select_recordings__(ba_data, rec_split['BA']['test'], audio_path)
+		self.ba_train_data = select_recordings(ba_data, rec_split['BA']['train'], audio_path, self.samples_per_class)
+		self.ba_val_data = select_recordings(ba_data, rec_split['BA']['validation'], audio_path, cls_samples = 'min')
+		self.ba_test_data = select_recordings(ba_data, rec_split['BA']['test'], audio_path, cls_samples = 'min')
 		print(f'\nAge data:')
 		print(f'\ttrain: {self.ba_train_data.shape}')
 		print(f'\tvalidation: {self.ba_val_data.shape}')
@@ -72,18 +85,6 @@ class CNNTrainer(ModelTrainer):
 		return self.__do_training__(
 			self.ba_train_data, self.ba_test_data, self.ba_val_data, out_dir, label = 'brood age'
 		)
-
-	def __select_recordings__(self, data: pd.DataFrame, recordings: list[str], audio_path: str) -> pd.DataFrame:
-		def extract_rec_name(file_name: str) -> str:
-			end_idx = file_name.rindex('__')
-			return file_name[:end_idx]
-
-		selection_df = data[data['file'].apply(extract_rec_name).isin(recordings)]
-		selection_df['file'] = audio_path + '/' + selection_df['file']
-		selection_df = selection_df.set_index('file')
-
-		classes = [str(cls) for cls in sorted(selection_df['class'].unique())]
-		return balance_data(selection_df[classes], classes, samples_per_class = self.samples_per_class)
 
 	def __do_training__(
 			self, train_data: pd.DataFrame, test_data: Optional[pd.DataFrame],

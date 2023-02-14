@@ -39,7 +39,7 @@ if __name__ == '__main__':
 	arg_parser.add_argument('-l', '--learning-rate', type = float, default = 0.001)
 	arg_parser.add_argument('-e', '--event', type = str, choices = ['feeding', 'contact', 'all'], default = 'all')
 	arg_parser.add_argument('-t', '--target', type = str, choices = ['size', 'age', 'all'], default = 'all')
-	arg_parser.add_argument('-c', '--split-config-path', type = str, default = 'data-split.json')
+	arg_parser.add_argument('-c', '--split-config-path', type = str)
 	arg_parser.add_argument('--group-ages', type = str, default = '')
 	arg_parser.add_argument('--samples-per-class', type = str, default = 'min')
 	args = arg_parser.parse_args()

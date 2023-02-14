@@ -55,6 +55,13 @@ on:
         required: true
         type: string
         default: min
+      data_split_config:
+        description: Data split configuration file
+        required: true
+        type: choice
+        options:
+          - data-split-bs3-4-ba0-6-9-12-15.json
+          - data-split-bs3-4-ba0-7-12-15.json
 
 permissions:
   contents: read
@@ -100,7 +107,7 @@ jobs:
           -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} -d 2.0 \
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
           -e ${{ github.event.inputs.event }} -t ${{ github.event.inputs.target }} \
-          --group-ages ${{ github.event.inputs.age_groups }} \
+          -c "config/${{ github.event.inputs.event }}" --group-ages ${{ github.event.inputs.age_groups }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
           data-export/s2.0-o1.0 audio-work/s2.0-o1.0
       - name: Archive trained model
