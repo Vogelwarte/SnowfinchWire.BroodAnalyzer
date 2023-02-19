@@ -141,25 +141,6 @@ def balance_data(data: pd.DataFrame, classes: list[str], samples_per_class: str)
 		return resample(data, n_samples_per_class = int(samples_per_class))
 
 
-#
-# data_per_class = []
-#
-# for cls in classes:
-# 	data_per_class.append(data[data[cls] == 1])
-#
-# cls_counts = [len(df) for df in data_per_class]
-# sample_size = round(min(cls_counts) * (1.0 + tolerance))
-#
-# balanced_df = pd.DataFrame()
-#
-# for i in range(len(data_per_class)):
-# 	if len(data_per_class[i]) > sample_size:
-# 		data_per_class[i] = data_per_class[i].sample(n = sample_size)
-# 	balanced_df = pd.concat([balanced_df, data_per_class[i]])
-#
-# return balanced_df
-
-
 def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overlap_sec = 0.0) -> list[np.ndarray]:
 	samples_per_slice = round(slice_len_sec * sample_rate)
 	overlap_samples = round(overlap_sec * sample_rate)
@@ -180,7 +161,7 @@ def group_ages(age_df: pd.DataFrame, groups: list[tuple[int, int]]) -> pd.DataFr
 	def map_age(age: int) -> str:
 		for low, high in groups:
 			if low <= age <= high:
-				return f'{low}-{high}'
+				return '{:02}-{:02}'.format(low, high)
 		return 'none'
 
 	age_group_df = age_df[['file', 'class']]
