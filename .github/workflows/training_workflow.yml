@@ -65,8 +65,7 @@ on:
         options:
           - data-split-bs-all-ba-0-5-8-11-14.json
           - data-split-bs-all-ba-0-6-9-13.json
-        default:
-          - data-split-bs-all-ba-0-5-8-11-14.json
+        default: data-split-bs-all-ba-0-5-8-11-14.json
 
 permissions:
   contents: read
