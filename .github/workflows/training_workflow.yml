@@ -14,7 +14,7 @@ on:
           - resnet101
           - densenet121
           - inception_v3
-        default: resnet50
+        default: resnet101
       learning_rate:
         description: Learning rate
         required: true
@@ -22,7 +22,7 @@ on:
       batch_size:
         description: Batch size
         required: true
-        default: 100
+        default: 64
       event:
         description: Target event
         type: choice
@@ -31,7 +31,7 @@ on:
           - contact
           - all
         required: true
-        default: all
+        default: feeding
       n_epochs:
         description: Training epochs count
         required: true
