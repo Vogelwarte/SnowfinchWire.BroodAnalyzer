@@ -161,9 +161,17 @@ def group_ages(age_df: pd.DataFrame, groups: list[tuple[int, int]]) -> pd.DataFr
 				return '{:02}-{:02}'.format(low, high)
 		return 'none'
 
-	age_group_df = age_df[['file', 'class']]
-	age_group_df['class'] = age_group_df['class'].apply(map_age)
-	age_group_df = age_group_df.sort_values(by = 'class').reset_index().drop(columns = 'index')
+	age_group_df = age_df[['file', 'class_min', 'class_max']]
+	age_group_df['class_min'] = age_group_df['class_min'].apply(map_age)
+	age_group_df['class_max'] = age_group_df['class_max'].apply(map_age)
+	age_group_df = age_group_df[age_group_df['class_min'] == age_group_df['class_max']]
+
+	age_group_df = age_group_df \
+		.drop(columns = 'class_min') \
+		.rename(columns = { 'class_max': 'class' }) \
+		.sort_values(by = 'class') \
+		.reset_index() \
+		.drop(columns = 'index')
 
 	groups_encoder = OneHotEncoder()
 	groups_1hot = groups_encoder.fit_transform(age_group_df['class'].values.reshape(-1, 1))
