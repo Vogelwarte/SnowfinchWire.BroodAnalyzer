@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -15,9 +15,9 @@ from .common.preprocessing.io import number_from_recording_name
 
 @dataclass
 class SnowfinchDataset:
+	data_root: Path
 	files: list[Path]
 	brood_sizes: list[int]
-	brood_ages: list[int]
 
 
 def __detect_silence__(audio: np.ndarray, min_len, threshold: int) -> list:
@@ -63,8 +63,8 @@ def __to_dbfs__(audio: np.ndarray) -> np.ndarray:
 
 
 def prepare_training_data(
-		recording: SnowfinchNestRecording, brood_sizes: list[int], brood_ages: list[float],
-		work_dir: Union[str, Path], slice_duration_sec: float, overlap_sec: float = 0.0
+		recording: SnowfinchNestRecording, brood_sizes: list[int], work_dir: Union[str, Path],
+		slice_duration_sec: float, overlap_sec: float = 0.0
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
 	slices_dir = Path(work_dir)
 	slices_dir.mkdir(exist_ok = True, parents = True)
@@ -98,28 +98,25 @@ def prepare_training_data(
 		files, slice_labels, is_silence, classes = brood_sizes, match = recording.brood_size
 	)
 	ba_data = __make_training_frame__(
-		files, slice_labels, is_silence, classes = brood_ages, match = recording.brood_age
+		files, slice_labels, is_silence, match = recording.brood_age
 	)
 
 	return bs_data, ba_data
 
 
 def prepare_training(
-		dataset: SnowfinchDataset, work_dir: Union[str, Path], slice_duration_sec: float, overlap_sec: float = 0.0
+		dataset: SnowfinchDataset, work_dir: Union[str, Path], slice_duration_sec: float,
+		overlap_sec: float = 0.0, rec_df: Optional[pd.DataFrame] = None
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
 	bs_train_df = pd.DataFrame()
 	ba_train_df = pd.DataFrame()
 
 	for file in dataset.files:
 		print(f'Loading recording {file.stem}')
-		recording = load_recording_data(file)
+		recording = load_recording_data(file, data_root = dataset.data_root, rec_df = rec_df)
 		validate_recording_data(recording)
 
-		bs_df, ba_df = prepare_training_data(
-			recording, dataset.brood_sizes, dataset.brood_ages, work_dir,
-			slice_duration_sec, overlap_sec
-		)
-
+		bs_df, ba_df = prepare_training_data(recording, dataset.brood_sizes, work_dir, slice_duration_sec, overlap_sec)
 		print(f'Extracted {len(bs_df)} samples from recording', end = '\n\n')
 
 		bs_train_df = pd.concat([bs_train_df, bs_df])
@@ -182,41 +179,56 @@ def group_ages(age_df: pd.DataFrame, groups: list[tuple[int, int]]) -> pd.DataFr
 
 
 def __make_training_frame__(
-		files: list[str], labels: list[str], is_silence: list[bool], classes: list, match: Union[int, float, str],
+		files: list[str], labels: list[str], is_silence: list[bool],
+		match: Union[int, float, str, tuple[float, float]], classes: Optional[list] = None
 ) -> pd.DataFrame:
 	data = {
 		'file': files,
 		'event': labels,
-		'is_silence': is_silence,
-		'class': [match] * len(files)
+		'is_silence': is_silence
 	}
 
-	for c in classes:
-		if c == match:
-			data[str(c)] = list(np.ones(len(files), dtype = 'int'))
-		else:
-			data[str(c)] = list(np.zeros(len(files), dtype = 'int'))
+	if type(match) == tuple:
+		cls_min, cls_max = match
+		data['class_min'] = [cls_min] * len(files)
+		data['class_max'] = [cls_max] * len(files)
+	else:
+		data['class'] = [match] * len(files)
+
+	if classes is not None:
+		for c in classes:
+			if c == match:
+				data[str(c)] = list(np.ones(len(files), dtype = 'int'))
+			else:
+				data[str(c)] = list(np.zeros(len(files), dtype = 'int'))
 
 	return pd.DataFrame(data = data).set_index('file')
 
 
-def discover_training_data(data_dir: str) -> SnowfinchDataset:
+def discover_training_data(data_dir: str, rec_ext = 'flac', rec_df: Optional[pd.DataFrame] = None) -> SnowfinchDataset:
 	file_paths = []
 	brood_sizes = set()
-	brood_ages = set()
+	data_path = Path(data_dir)
 
-	for path in Path(data_dir).rglob('*.flac'):
-		file_paths.append(path)
-		rec_title = path.stem
-		brood_age = number_from_recording_name(rec_title, label = 'BA', terminator = '_')
-		brood_ages.add(brood_age)
-		brood_size = number_from_recording_name(rec_title, label = 'BS', terminator = '-')
-		brood_sizes.add(brood_size)
+	for path in data_path.rglob(f'*.{rec_ext}'):
+		if rec_df is None:
+			file_paths.append(path)
+			rec_title = path.stem
+			brood_size = number_from_recording_name(rec_title, label = 'BS', terminator = '-')
+			brood_sizes.add(brood_size)
+		elif str(path.relative_to(data_path)) in rec_df['rec_path'].values:
+			file_paths.append(path)
 
-	return SnowfinchDataset(file_paths, list(brood_sizes), list(brood_ages))
+	if rec_df is not None:
+		brood_sizes.update(rec_df['brood_size'].unique())
+
+	return SnowfinchDataset(data_path, file_paths, list(brood_sizes))
 
 
 def filter_recording(recording: SnowfinchNestRecording, target_labels: list[str]) -> list[tuple[np.ndarray, str]]:
+	if not len(recording.labels):
+		return []
+
 	labelled_audio = []
 	matching_events = recording.labels[recording.labels.label.isin(target_labels)]
 
