@@ -31,6 +31,9 @@ def collect_rec_data(data_path: Path, brood_df: pd.DataFrame):
 		)
 
 		visit_datetimes = brood_df.loc[brood_df['brood_id'] == brood_id, 'datetime']
+		if len(visit_datetimes) == 0:
+			continue
+
 		time_delta = abs(pd.to_datetime(visit_datetimes, format = '%Y-%m-%d %H:%M:%S') - rec_datetime)
 		rec_idx = time_delta.idxmin(axis = 0)
 		if time_delta[rec_idx] > timedelta(hours = 12):
