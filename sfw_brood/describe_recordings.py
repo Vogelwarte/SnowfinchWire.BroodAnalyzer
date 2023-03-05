@@ -22,7 +22,8 @@ def collect_rec_data(data_path: Path, brood_df: pd.DataFrame):
 		brood_id = rec_path.parent.parent.stem
 
 		rec_title = rec_path.stem
-		if not re.match('20[0-9]{6}_[0-9]{6}', rec_title):
+		rec_title_match = re.match('20[0-9]{6}_[0-9]{6}', rec_title)
+		if not rec_title_match or rec_title_match.start() != 0 or rec_title_match.end() != len(rec_title):
 			continue
 
 		rec_datetime = datetime(
