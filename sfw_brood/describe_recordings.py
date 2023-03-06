@@ -41,7 +41,7 @@ def collect_rec_data(data_path: Path, brood_df: pd.DataFrame):
 
 		brood_info = brood_df.iloc[rec_idx]
 
-		rec_data['rec_path'].append(str(rec_path.relative_to(data_path)))
+		rec_data['rec_path'].append(rec_path.relative_to(data_path).as_posix())
 		rec_data['brood_id'].append(brood_id)
 		rec_data['datetime'].append(rec_datetime)
 		rec_data['age_min'].append(brood_info['age_min'])
