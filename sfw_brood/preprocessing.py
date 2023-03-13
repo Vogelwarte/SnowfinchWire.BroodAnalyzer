@@ -120,12 +120,17 @@ def __process_recording__(
 	if verbose:
 		print(f'Loading recording {rec_path.stem}')
 
-	recording = load_recording_data(rec_path, rec_info = rec_info)
-	validate_recording_data(recording)
-	bs_df, ba_df = prepare_training_data(recording, brood_sizes, config)
+	try:
+		recording = load_recording_data(rec_path, rec_info = rec_info)
+		validate_recording_data(recording)
+		bs_df, ba_df = prepare_training_data(recording, brood_sizes, config)
 
-	if verbose:
-		print(f'Extracted {len(bs_df)} samples from recording', end = '\n\n')
+		if verbose:
+			print(f'Extracted {len(bs_df)} samples from recording', end = '\n\n')
+
+	except Exception as error:
+		print(f'Failed to process recording {rec_path}: {error}')
+		bs_df, ba_df = pd.DataFrame(), pd.DataFrame()
 
 	return bs_df, ba_df
 
