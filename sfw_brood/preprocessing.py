@@ -251,7 +251,7 @@ def discover_training_data(data_dir: str, rec_df: Optional[pd.DataFrame] = None)
 	brood_sizes = set()
 	data_path = Path(data_dir)
 
-	rec_patterns = ['*.flac', '*.wav']
+	rec_patterns = ['*.flac', '*.wav', '*.WAV']
 	for pattern in rec_patterns:
 		for path in data_path.rglob(pattern):
 			if rec_df is None:
