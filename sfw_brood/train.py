@@ -10,7 +10,7 @@ def make_time_str() -> str:
 	return datetime.now().isoformat()[:19].replace(':', '-')
 
 
-def parse_age_groups(age_groups: str) -> Optional[list[tuple[int, int]]]:
+def parse_age_groups(age_groups: str) -> Optional[list[tuple[float, float]]]:
 	if not age_groups:
 		return None
 
@@ -19,7 +19,7 @@ def parse_age_groups(age_groups: str) -> Optional[list[tuple[int, int]]]:
 	for age_group in age_groups.split(','):
 		try:
 			age_range = age_group.split('-')
-			out_groups.append((int(age_range[0]), int(age_range[1])))
+			out_groups.append((float(age_range[0]), float(age_range[1])))
 		except Exception as parse_error:
 			print(f'Invalid age groups: {parse_error}')
 			exit(1)

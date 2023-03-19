@@ -11,17 +11,32 @@ from .util import cleanup
 from .validator import CNNValidator
 
 
-def select_recordings(data: pd.DataFrame, recordings: list[str], audio_path: str, cls_samples: str) -> pd.DataFrame:
-	def extract_rec_name(file_name: str) -> str:
-		end_idx = file_name.rindex('__')
-		return file_name[:end_idx]
+def __format_data__(
+		data: pd.DataFrame, audio_path: str, classes: list[str], cls_samples: Optional[str] = None
+) -> pd.DataFrame:
+	data['file'] = audio_path + '/' + data['file']
+	data = data.set_index('file')
+	if cls_samples:
+		return balance_data(data[classes], classes, cls_samples)
+	return data[classes]
 
-	selection_df = data[data['file'].apply(extract_rec_name).isin(recordings)]
-	selection_df['file'] = audio_path + '/' + selection_df['file']
-	selection_df = selection_df.set_index('file')
 
-	classes = [str(cls) for cls in sorted(selection_df['class'].unique())]
-	return balance_data(selection_df[classes], classes, cls_samples)
+def select_recordings(
+		data: pd.DataFrame, audio_path: str, cls_samples: str, split_conf: dict
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+	classes = [str(cls) for cls in sorted(data['class'].unique())]
+
+	selector = split_conf['selector']
+
+	test_idx = data[selector].isin(split_conf['test'])
+	test_df = __format_data__(data[test_idx], audio_path, classes)
+
+	val_idx = data[selector].isin(split_conf['validation'])
+	val_df = __format_data__(data[val_idx], audio_path, classes)
+
+	train_df = __format_data__(data[~(test_idx | val_idx)], audio_path, classes, cls_samples)
+
+	return train_df, val_df, test_df
 
 
 class CNNTrainer(ModelTrainer):
@@ -30,7 +45,7 @@ class CNNTrainer(ModelTrainer):
 			sample_duration_sec: float, rec_split: dict,
 			cnn_arch: str, n_epochs: int, n_workers = 12, batch_size = 100, learn_rate = 0.001,
 			target_label: Optional[str] = None, remove_silence: bool = True,
-			age_groups: Optional[list[tuple[int, int]]] = None, samples_per_class = 'min'
+			age_groups: Optional[list[tuple[float, float]]] = None, samples_per_class = 'min'
 	):
 		self.cnn_arch = cnn_arch
 		self.n_epochs = n_epochs
@@ -45,25 +60,25 @@ class CNNTrainer(ModelTrainer):
 		self.data_split = rec_split
 		self.samples_per_class = samples_per_class
 
-		bs_data = pd.read_csv(f'{data_path}/brood-size.csv')
+		bs_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
 		bs_data = bs_data[~bs_data['is_silence'] & (bs_data['event'].isin(self.target_labels))]
 
-		ba_data = pd.read_csv(f'{data_path}/brood-age.csv')
+		ba_data = pd.read_csv(f'{data_path}/brood-age.csv', dtype = { 'is_silence': 'bool' })
 		ba_data = ba_data[~ba_data['is_silence'] & (ba_data['event'].isin(self.target_labels))]
 		if age_groups:
 			ba_data = group_ages(ba_data, groups = age_groups)
 
-		self.bs_train_data = select_recordings(bs_data, rec_split['BS']['train'], audio_path, self.samples_per_class)
-		self.bs_val_data = select_recordings(bs_data, rec_split['BS']['validation'], audio_path, cls_samples = 'min')
-		self.bs_test_data = select_recordings(bs_data, rec_split['BS']['test'], audio_path, cls_samples = 'min')
+		self.bs_train_data, self.bs_val_data, self.bs_test_data = select_recordings(
+			bs_data, audio_path, self.samples_per_class, split_conf = rec_split['BS']
+		)
 		print(f'\nSize data:')
 		print(f'\ttrain: {self.bs_train_data.shape}')
 		print(f'\tvalidation: {self.bs_val_data.shape}')
 		print(f'\ttest: {self.bs_test_data.shape}')
 
-		self.ba_train_data = select_recordings(ba_data, rec_split['BA']['train'], audio_path, self.samples_per_class)
-		self.ba_val_data = select_recordings(ba_data, rec_split['BA']['validation'], audio_path, cls_samples = 'min')
-		self.ba_test_data = select_recordings(ba_data, rec_split['BA']['test'], audio_path, cls_samples = 'min')
+		self.ba_train_data, self.ba_val_data, self.ba_test_data = select_recordings(
+			ba_data, audio_path, self.samples_per_class, split_conf = rec_split['BA']
+		)
 		print(f'\nAge data:')
 		print(f'\ttrain: {self.ba_train_data.shape}')
 		print(f'\tvalidation: {self.ba_val_data.shape}')

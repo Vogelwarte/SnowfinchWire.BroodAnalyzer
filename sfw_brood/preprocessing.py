@@ -116,14 +116,21 @@ def __process_recording__(
 		rec_data: tuple[Path, Optional[pd.Series], list[int], PreprocessorConfig], verbose = False
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
 	rec_path, rec_info, brood_sizes, config = rec_data
+	rec_title = rec_path.stem
 
 	if verbose:
-		print(f'Loading recording {rec_path.stem}')
+		print(f'Loading recording {rec_title}')
 
 	try:
 		recording = load_recording_data(rec_path, rec_info = rec_info)
 		validate_recording_data(recording)
 		bs_df, ba_df = prepare_training_data(recording, brood_sizes, config)
+
+		bs_df['recording'] = rec_title
+		bs_df['brood_id'] = rec_info['brood_id']
+
+		ba_df['recording'] = rec_title
+		ba_df['brood_id'] = rec_info['brood_id']
 
 		if verbose:
 			print(f'Extracted {len(bs_df)} samples from recording', end = '\n\n')
@@ -187,14 +194,14 @@ def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overl
 	return slices
 
 
-def group_ages(age_df: pd.DataFrame, groups: list[tuple[int, int]]) -> pd.DataFrame:
-	def map_age(age: int) -> str:
+def group_ages(age_df: pd.DataFrame, groups: list[tuple[float, float]]) -> pd.DataFrame:
+	def map_age(age: float) -> str:
 		for low, high in groups:
 			if low <= age <= high:
 				return '{:02}-{:02}'.format(low, high)
 		return 'none'
 
-	age_group_df = age_df[['file', 'class_min', 'class_max']]
+	age_group_df = age_df[['file', 'class_min', 'class_max', 'recording', 'brood_id']]
 	age_group_df['class_min'] = age_group_df['class_min'].apply(map_age)
 	age_group_df['class_max'] = age_group_df['class_max'].apply(map_age)
 	age_group_df = age_group_df[age_group_df['class_min'] == age_group_df['class_max']]
