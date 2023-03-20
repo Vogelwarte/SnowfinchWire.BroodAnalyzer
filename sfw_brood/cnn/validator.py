@@ -14,6 +14,7 @@ class CNNValidator(ModelValidator):
 		rec_files = list(self.test_data.index)
 		classes = list(self.test_data.columns)
 
+		print('Running test prediction')
 		pred_df = model.predict(rec_files)
 		print('Test predictions made, checking accuracy')
 
