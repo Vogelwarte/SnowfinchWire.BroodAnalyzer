@@ -21,13 +21,14 @@ class CNNValidator(ModelValidator):
 		print(f'Classes present in prediction output: {pred_classes}')
 
 		y_pred = pred_df[pred_classes].idxmax(axis = 1)
-		y_true = self.test_data.loc[pred_df.file][classes].idxmax(axis = 1)
+		y_true = self.test_data.loc[pred_df.file, classes].idxmax(axis = 1)
 
 		if output:
 			print('Generating classification report and confusion matrix')
 
-			y_pred.to_csv(f'{output}/y-pred.csv')
+			self.test_data.to_csv(f'{output}/test-data.csv')
 			y_true.to_csv(f'{output}/y-true.csv')
+			pred_df.to_csv(f'{output}/pred.csv')
 
 			report = classification_report(y_true, y_pred, output_dict = True)
 			report_df = pd.DataFrame(report).transpose()
