@@ -117,7 +117,7 @@ jobs:
           python -m sfw_brood.train \
           -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} -d 2.0 \
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
-          -e ${{ github.event.inputs.event }} -t ${{ github.event.inputs.target }} -w 16 \
+          -e ${{ github.event.inputs.event }} -t ${{ github.event.inputs.target }} -w 1 \
           -c "config/${{ github.event.inputs.data_split_config }}" --group-ages ${{ github.event.inputs.age_groups }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
           "/home/gardzielb/sfw-brood-work/s${{ github.event.inputs.sample_duration }}-o1/s${{ github.event.inputs.sample_duration }}.0-o1.0" \
