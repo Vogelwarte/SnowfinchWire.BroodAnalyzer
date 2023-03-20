@@ -1,9 +1,15 @@
 import argparse
 import json
+import warnings
 from datetime import datetime
 from typing import Optional
 
+from pandas.errors import SettingWithCopyWarning
+
 from sfw_brood.cnn.trainer import CNNTrainer
+
+warnings.simplefilter(action = 'ignore', category = FutureWarning)
+warnings.simplefilter(action = 'ignore', category = SettingWithCopyWarning)
 
 
 def make_time_str() -> str:
