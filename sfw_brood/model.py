@@ -18,7 +18,7 @@ class SnowfinchBroodClassifier(ABC):
 		self.model_info = model_info
 
 	@abstractmethod
-	def predict(self, recording_paths: list[str]) -> pd.DataFrame:
+	def predict(self, recording_paths: list[str], n_workers: int) -> pd.DataFrame:
 		pass
 
 	def serialize(self, path: str):

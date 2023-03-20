@@ -6,16 +6,17 @@ from sfw_brood.model import ModelValidator, SnowfinchBroodClassifier
 
 
 class CNNValidator(ModelValidator):
-	def __init__(self, test_data: pd.DataFrame, label: str):
+	def __init__(self, test_data: pd.DataFrame, label: str, n_workers: int):
 		self.test_data = test_data
 		self.label = label
+		self.n_workers = n_workers
 
 	def validate(self, model: SnowfinchBroodClassifier, output = '') -> float:
 		rec_files = list(self.test_data.index)
 		classes = list(self.test_data.columns)
 
 		print('Running test prediction')
-		pred_df = model.predict(rec_files)
+		pred_df = model.predict(rec_files, n_workers = self.n_workers)
 		print('Test predictions made, checking accuracy')
 
 		pred_classes = set(classes).intersection(set(pred_df.columns))
