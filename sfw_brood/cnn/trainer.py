@@ -163,8 +163,11 @@ class CNNTrainer(ModelTrainer):
 
 		trained_model = self.__train_cnn__(cnn, train_data, validation_data)
 
+		print(f'Training done, testing model with output dir {out_dir}')
+
 		validator = CNNValidator(test_data, label)
 		accuracy = validator.validate(trained_model, output = out_dir)
+
 		print(f'CNN accuracy: {accuracy}')
 
 		return trained_model

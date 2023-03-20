@@ -50,9 +50,8 @@ on:
         required: false
         type: choice
         options:
-          - 0-4,5-7,8-10,11-13,14-18
-          - 0-5,6-8,9-12,13-18
-        default: 0-4,5-7,8-10,11-13,14-18
+          - 0-5.5,6-8.5,9-11.5,12-14.5,15-30
+        default: 0-5.5,6-8.5,9-11.5,12-14.5,15-30
       samples_per_class:
         description: Target count of samples per class
         required: true
@@ -63,9 +62,17 @@ on:
         required: true
         type: choice
         options:
-          - data-split-bs-all-ba-0-5-8-11-14.json
-          - data-split-bs-all-ba-0-6-9-13.json
-        default: data-split-bs-all-ba-0-5-8-11-14.json
+          - data-split-server.json
+        default: data-split-server.json
+      sample_duration:
+        description: Duration of train/test sound sample
+        required: true
+        type: choice
+        options:
+          - 2
+          - 5
+          - 10
+        default: s5.0-o1.0
 
 permissions:
   contents: read
@@ -94,26 +101,27 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Cache training data
-        id: cache-train-data
-        uses: actions/cache@v3
-        with:
-          key: s2.0-o1.0
-          path: |
-            data-export
-            audio-work
-      - name: Prepare training data
-        if: ${{ steps.cache-train-data.outputs.cache-hit != 'true' }}
-        run: python -m sfw_brood.export_data -s 2.0 -o 1.0 -w audio-work "$DATA_PATH" data-export
+#      - name: Cache training data
+#        id: cache-train-data
+#        uses: actions/cache@v3
+#        with:
+#          key: s2.0-o1.0
+#          path: |
+#            data-export
+#            audio-work
+#      - name: Prepare training data
+#        if: ${{ steps.cache-train-data.outputs.cache-hit != 'true' }}
+#        run: python -m sfw_brood.export_data -s 2.0 -o 1.0 -w audio-work "$DATA_PATH" data-export
       - name: Run training
         run: |
           python -m sfw_brood.train \
           -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} -d 2.0 \
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
-          -e ${{ github.event.inputs.event }} -t ${{ github.event.inputs.target }} \
+          -e ${{ github.event.inputs.event }} -t ${{ github.event.inputs.target }} -w 16 \
           -c "config/${{ github.event.inputs.data_split_config }}" --group-ages ${{ github.event.inputs.age_groups }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
-          data-export/s2.0-o1.0 audio-work/s2.0-o1.0
+          "/home/gardzielb/sfw-brood-work/s${{ github.event.inputs.sample_duration }}-o1/s${{ github.event.inputs.sample_duration }}.0-o1.0" \
+          "/home/gardzielb/sfw-brood-work/out/s${{ github.event.inputs.sample_duration }}.0-o1.0"
       - name: Archive trained model
         uses: actions/upload-artifact@v3
         with:

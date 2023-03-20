@@ -35,4 +35,6 @@ class CNNValidator(ModelValidator):
 				plt.savefig(f'{output}/confusion-matrix.png')
 				report_df.to_csv(f'{output}/clf-report.csv')
 
+			print(f'Classification report and confusion matrix saved to {output}')
+
 		return accuracy_score(y_true, y_pred)
