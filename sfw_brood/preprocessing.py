@@ -162,6 +162,9 @@ def prepare_training(
 			bs_train_df = pd.concat([bs_train_df, size_df])
 			ba_train_df = pd.concat([ba_train_df, age_df])
 
+	bs_train_df = bs_train_df[~bs_train_df.index.duplicated(keep = 'first')]
+	ba_train_df = ba_train_df[~ba_train_df.index.duplicated(keep = 'first')]
+
 	return bs_train_df, ba_train_df
 
 
@@ -254,7 +257,7 @@ def __make_training_frame__(
 
 
 def discover_training_data(data_dir: str, rec_df: Optional[pd.DataFrame] = None) -> SnowfinchDataset:
-	file_paths = []
+	file_paths = set()
 	brood_sizes = set()
 	data_path = Path(data_dir)
 
@@ -262,17 +265,17 @@ def discover_training_data(data_dir: str, rec_df: Optional[pd.DataFrame] = None)
 	for pattern in rec_patterns:
 		for path in data_path.rglob(pattern):
 			if rec_df is None:
-				file_paths.append(path)
+				file_paths.add(path)
 				rec_title = path.stem
 				brood_size = number_from_recording_name(rec_title, label = 'BS', terminator = '-')
 				brood_sizes.add(brood_size)
 			elif path.relative_to(data_path).as_posix() in rec_df['rec_path'].values:
-				file_paths.append(path)
+				file_paths.add(path)
 
 	if rec_df is not None:
 		brood_sizes.update(rec_df['brood_size'].unique())
 
-	return SnowfinchDataset(data_path, file_paths, list(brood_sizes))
+	return SnowfinchDataset(data_path, list(file_paths), list(brood_sizes))
 
 
 def filter_recording(recording: SnowfinchNestRecording, target_labels: list[str]) -> list[tuple[np.ndarray, str]]:

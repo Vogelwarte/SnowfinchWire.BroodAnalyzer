@@ -15,7 +15,7 @@ class CNNValidator(ModelValidator):
 		rec_files = list(self.test_data.index)
 		classes = list(self.test_data.columns)
 
-		print('Running test prediction')
+		print(f'Running test prediction for {len(rec_files)}')
 		pred_df = model.predict(rec_files, n_workers = self.n_workers)
 		pred_classes = set(classes).intersection(set(pred_df.columns))
 		print(f'Classes present in prediction output: {pred_classes}')
