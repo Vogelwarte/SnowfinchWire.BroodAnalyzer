@@ -17,10 +17,7 @@ class CNNValidator(ModelValidator):
 
 		print('Running test prediction')
 		pred_df = model.predict(rec_files, n_workers = self.n_workers)
-		print('Test predictions made, checking accuracy')
-
 		pred_classes = set(classes).intersection(set(pred_df.columns))
-
 		print(f'Classes present in prediction output: {pred_classes}')
 
 		y_pred = pred_df[pred_classes].idxmax(axis = 1)

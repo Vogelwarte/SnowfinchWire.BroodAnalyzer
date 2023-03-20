@@ -11,9 +11,9 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 
 	def predict(self, recording_paths: list[str], n_workers: int = 12) -> pd.DataFrame:
 		pred_result = self.cnn.predict(recording_paths, activation_layer = 'softmax', num_workers = n_workers)
-		print(f'Predictions made, result is {type(pred_result)}')
-		print(f'Result df shape = {pred_result[0].shape}')
-		return pred_result[0].reset_index()
+		result_df = pred_result[0] if type(pred_result) == tuple else pred_result
+		print(f'Predictions made, result df shape = {result_df.shape}')
+		return result_df.reset_index()
 
 	def _serialize_(self, path: str):
 		self.cnn.save(path)
