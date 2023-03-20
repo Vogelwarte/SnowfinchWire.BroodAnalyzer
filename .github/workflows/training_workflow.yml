@@ -120,8 +120,8 @@ jobs:
           -e ${{ github.event.inputs.event }} -t ${{ github.event.inputs.target }} -w 1 \
           -c "config/${{ github.event.inputs.data_split_config }}" --group-ages ${{ github.event.inputs.age_groups }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
-          "/home/gardzielb/sfw-brood-work/s${{ github.event.inputs.sample_duration }}-o1/s${{ github.event.inputs.sample_duration }}.0-o1.0" \
-          "/home/gardzielb/sfw-brood-work/out/s${{ github.event.inputs.sample_duration }}.0-o1.0"
+          "/home/gardzielb/sfw-brood-work/out/s${{ github.event.inputs.sample_duration }}.0-o1.0" \
+          "/home/gardzielb/sfw-brood-work/s${{ github.event.inputs.sample_duration }}-o1/s${{ github.event.inputs.sample_duration }}.0-o1.0"
       - name: Archive trained model
         uses: actions/upload-artifact@v3
         with:
