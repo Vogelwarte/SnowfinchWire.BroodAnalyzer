@@ -24,7 +24,11 @@ def __format_data__(
 def select_recordings(
 		data: pd.DataFrame, audio_path: str, cls_samples: str, split_conf: dict
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-	classes = [str(cls) for cls in sorted(data['class'].unique())]
+	if 'classes' in split_conf.keys():
+		classes = [str(cls) for cls in sorted(split_conf['classes'])]
+		data = data[data['class'].astype('str').isin(classes)]
+	else:
+		classes = [str(cls) for cls in sorted(data['class'].unique())]
 
 	selector = split_conf['selector']
 
@@ -35,6 +39,14 @@ def select_recordings(
 	val_df = __format_data__(data[val_idx], audio_path, classes)
 
 	train_df = __format_data__(data[~(test_idx | val_idx)], audio_path, classes, cls_samples)
+	test_size = round(0.45 * len(train_df))
+	val_size = round(0.2 * len(train_df))
+
+	if test_size < len(test_df):
+		test_df = test_df.sample(n = test_size)
+
+	if val_size < len(val_df):
+		val_df = val_df.sample(n = val_size)
 
 	return train_df, val_df, test_df
 

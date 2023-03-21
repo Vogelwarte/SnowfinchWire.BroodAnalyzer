@@ -201,7 +201,7 @@ def group_ages(age_df: pd.DataFrame, groups: list[tuple[float, float]]) -> pd.Da
 	def map_age(age: float) -> str:
 		for low, high in groups:
 			if low <= age <= high:
-				return '{:02}-{:02}'.format(low, high)
+				return '{:04.1f}-{:04.1f}'.format(low, high)
 		return 'none'
 
 	age_group_df = age_df[['file', 'class_min', 'class_max', 'recording', 'brood_id']]
