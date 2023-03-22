@@ -10,8 +10,9 @@ on:
         options:
           - resnet18
           - resnet50
-          - vgg11_bn
           - resnet101
+          - resnet152
+          - vgg11_bn
           - densenet121
           - inception_v3
         default: resnet101
