@@ -78,7 +78,7 @@ permissions:
   contents: read
 
 env:
-  DATA_PATH: /home/falco_ghrunner/Snowfinch-acoustics/AI_training_recordings
+  WORK_DIR: /home/gardzielb/sfw-brood-work
 
 jobs:
   train:
@@ -120,10 +120,12 @@ jobs:
           -e ${{ github.event.inputs.event }} -t ${{ github.event.inputs.target }} -w 12 \
           -c "config/${{ github.event.inputs.data_split_config }}" --group-ages ${{ github.event.inputs.age_groups }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
-          "/home/gardzielb/sfw-brood-work/out/s${{ github.event.inputs.sample_duration }}.0-o1.0" \
-          "/home/gardzielb/sfw-brood-work/s${{ github.event.inputs.sample_duration }}-o1/s${{ github.event.inputs.sample_duration }}.0-o1.0"
-      - name: Archive trained model
-        uses: actions/upload-artifact@v3
-        with:
-          name: Snowfinch-Brood-Classifier
-          path: _out/B[AS]__*/
+          "$WORK_DIR/out/s${{ github.event.inputs.sample_duration }}.0-o1.0" \
+          "$WORK_DIR/s${{ github.event.inputs.sample_duration }}-o1/s${{ github.event.inputs.sample_duration }}.0-o1.0"
+      - name: Store results
+        run: cp -R _out/* "$WORK_DIR"/results/
+#      - name: Archive trained model
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: Snowfinch-Brood-Classifier
+#          path: _out/B[AS]__*/
