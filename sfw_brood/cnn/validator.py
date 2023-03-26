@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, classification_report, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score, classification_report, ConfusionMatrixDisplay, multilabel_confusion_matrix
 
 from sfw_brood.model import ModelValidator, SnowfinchBroodClassifier
 
@@ -11,7 +11,7 @@ class CNNValidator(ModelValidator):
 		self.label = label
 		self.n_workers = n_workers
 
-	def validate(self, model: SnowfinchBroodClassifier, output = '') -> float:
+	def validate(self, model: SnowfinchBroodClassifier, output = '', multi_target = False) -> float:
 		rec_files = list(self.test_data.index)
 		classes = list(self.test_data.columns)
 
@@ -20,22 +20,27 @@ class CNNValidator(ModelValidator):
 		pred_classes = set(classes).intersection(set(pred_df.columns))
 		print(f'Classes present in prediction output: {pred_classes}')
 
-		y_pred = pred_df[pred_classes].idxmax(axis = 1)
+		# y_pred = pred_df[pred_classes].idxmax(axis = 1)
+		y_pred = pred_df[pred_classes]
 		y_true = self.test_data.loc[pred_df.file, classes].idxmax(axis = 1)
 
 		if output:
 			print('Generating classification report and confusion matrix')
-
-			self.test_data.to_csv(f'{output}/test-data.csv')
-			y_true.to_csv(f'{output}/y-true.csv')
-			pred_df.to_csv(f'{output}/pred.csv')
-
 			report = classification_report(y_true, y_pred, output_dict = True)
 			report_df = pd.DataFrame(report).transpose()
 
-			ConfusionMatrixDisplay.from_predictions(y_true, y_pred)
-			plt.xlabel(f'Predicted {self.label}')
-			plt.ylabel(f'True {self.label}')
+			if multi_target:
+				n_classes = len(pred_classes)
+				cm = multilabel_confusion_matrix(y_true, y_pred, labels = pred_classes)
+				fig, ax = plt.subplots(1, n_classes, figsize = (6, 6))
+				for i in range(n_classes):
+					cm_disp = ConfusionMatrixDisplay(cm)
+					cm_disp.plot(xticks_rotation = 'vertical', ax = ax, colorbar = False, values_format = 'd')
+					fig.tight_layout()
+			else:
+				ConfusionMatrixDisplay.from_predictions(y_true, y_pred)
+				plt.xlabel(f'Predicted {self.label}')
+				plt.ylabel(f'True {self.label}')
 
 			if output == 'show':
 				plt.show()
@@ -43,6 +48,7 @@ class CNNValidator(ModelValidator):
 			else:
 				plt.savefig(f'{output}/confusion-matrix.png')
 				report_df.to_csv(f'{output}/clf-report.csv')
+				pred_df.to_csv(f'{output}/pred.csv')
 
 			print(f'Classification report and confusion matrix saved to {output}')
 

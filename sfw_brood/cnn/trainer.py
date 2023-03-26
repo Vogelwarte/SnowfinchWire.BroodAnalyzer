@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from opensoundscape.torch.models.cnn import CNN, InceptionV3, load_model
+from opensoundscape.torch.models.cnn import CNN, InceptionV3, load_model, use_resample_loss
 
 from sfw_brood.model import ModelTrainer
 from sfw_brood.preprocessing import balance_data, group_ages
@@ -24,11 +24,14 @@ def __format_data__(
 def select_recordings(
 		data: pd.DataFrame, audio_path: str, cls_samples: str, split_conf: dict
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-	if 'classes' in split_conf.keys():
+	if 'classes' in split_conf.keys() and 'class' in data.columns:
 		classes = [str(cls) for cls in sorted(split_conf['classes'])]
 		data = data[data['class'].astype('str').isin(classes)]
 	else:
-		classes = [str(cls) for cls in sorted(data['class'].unique())]
+		classes = set()
+		for cls_col in [col for col in data.columns if 'class' in col]:
+			classes.update(data[cls_col].unique())
+		classes = list(classes)
 
 	selector = split_conf['selector']
 
@@ -57,7 +60,8 @@ class CNNTrainer(ModelTrainer):
 			sample_duration_sec: float, rec_split: dict,
 			cnn_arch: str, n_epochs: int, n_workers = 12, batch_size = 100, learn_rate = 0.001,
 			target_label: Optional[str] = None, remove_silence: bool = True,
-			age_groups: Optional[list[tuple[float, float]]] = None, samples_per_class = 'min'
+			age_groups: Optional[list[tuple[float, float]]] = None, samples_per_class = 'min',
+			age_multi_target = False
 	):
 		self.cnn_arch = cnn_arch
 		self.n_epochs = n_epochs
@@ -71,6 +75,7 @@ class CNNTrainer(ModelTrainer):
 		self.data_path = data_path
 		self.data_split = rec_split
 		self.samples_per_class = samples_per_class
+		self.age_multi_target = age_multi_target
 
 		bs_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
 		bs_data = bs_data[~bs_data['is_silence'] & (bs_data['event'].isin(self.target_labels))]
@@ -78,7 +83,7 @@ class CNNTrainer(ModelTrainer):
 		ba_data = pd.read_csv(f'{data_path}/brood-age.csv', dtype = { 'is_silence': 'bool' })
 		ba_data = ba_data[~ba_data['is_silence'] & (ba_data['event'].isin(self.target_labels))]
 		if age_groups:
-			ba_data = group_ages(ba_data, groups = age_groups)
+			ba_data = group_ages(ba_data, groups = age_groups, multi_target = age_multi_target)
 
 		self.bs_train_data, self.bs_val_data, self.bs_test_data = select_recordings(
 			bs_data, audio_path, self.samples_per_class, split_conf = rec_split['BS']
@@ -105,46 +110,56 @@ class CNNTrainer(ModelTrainer):
 
 	def train_model_for_size(self, out_dir: str):
 		return self.__do_training__(
-			self.bs_train_data, self.bs_test_data, self.bs_val_data, out_dir, label = 'brood size'
+			self.bs_train_data, self.bs_test_data, self.bs_val_data, out_dir,
+			label = 'brood size', multi_target = False
 		)
 
 	def train_model_for_age(self, out_dir: str):
 		return self.__do_training__(
-			self.ba_train_data, self.ba_test_data, self.ba_val_data, out_dir, label = 'brood age'
+			self.ba_train_data, self.ba_test_data, self.ba_val_data, out_dir,
+			label = 'brood age', multi_target = self.age_multi_target
 		)
 
 	def __do_training__(
 			self, train_data: pd.DataFrame, test_data: Optional[pd.DataFrame],
-			validation_data: Optional[pd.DataFrame], out_dir: str, label: str
+			validation_data: Optional[pd.DataFrame], out_dir: str, label: str, multi_target: bool
 	):
 		if train_data.shape[0] == 0:
 			print('No training data available')
 			return
 
 		print('Training CNN...')
-		cnn = self.__setup_cnn__(classes = train_data.columns)
+		cnn = self.__setup_cnn__(classes = train_data.columns, multi_target = multi_target)
 
 		out_path = Path(out_dir)
 		out_path.mkdir(parents = True, exist_ok = True)
 
-		trained_model = self.__train_and_validate__(cnn, train_data, test_data, validation_data, out_dir, label)
+		trained_model = self.__train_and_validate__(
+			cnn, train_data, test_data, validation_data, out_dir, label, multi_target
+		)
 		trained_model.serialize(f'{out_dir}/cnn.model')
 
-	def __setup_cnn__(self, classes):
+	def __setup_cnn__(self, classes, multi_target: bool):
 		if self.cnn_arch == 'inception_v3':
-			cnn = InceptionV3(classes = classes, sample_duration = self.sample_duration_sec, single_target = True)
+			cnn = InceptionV3(
+				classes = classes, sample_duration = self.sample_duration_sec,
+				single_target = not multi_target
+			)
 		else:
 			cnn = CNN(
 				architecture = self.cnn_arch,
 				sample_duration = self.sample_duration_sec,
 				classes = classes,
-				single_target = True
+				single_target = not multi_target
 			)
+			if multi_target:
+				use_resample_loss(cnn)
+
 		cnn.optimizer_params['lr'] = self.learn_rate
 		return cnn
 
 	def __train_cnn__(
-			self, cnn: CNN, train_data: pd.DataFrame, validation_data: Optional[pd.DataFrame]
+			self, cnn: CNN, train_data: pd.DataFrame, validation_data: Optional[pd.DataFrame], multi_target: bool
 	) -> SnowfinchBroodCNN:
 		cnn.train(
 			train_data, validation_df = validation_data, epochs = self.n_epochs, batch_size = self.batch_size,
@@ -154,6 +169,7 @@ class CNNTrainer(ModelTrainer):
 		trained_cnn = load_model(f'{self.work_dir}/models/best.model')
 		return SnowfinchBroodCNN(
 			trained_cnn,
+			multi_target = multi_target,
 			model_info = {
 				'learning_rate': cnn.optimizer_params['lr'],
 				'architecture': self.cnn_arch,
@@ -162,24 +178,21 @@ class CNNTrainer(ModelTrainer):
 				'data_split': self.data_split,
 				'sample_duration_sec': self.sample_duration_sec,
 				'batch_size': self.batch_size,
-				'events': self.target_labels
+				'events': self.target_labels,
+				'multi_target': multi_target
 			}
 		)
 
 	def __train_and_validate__(
 			self, cnn: CNN, train_data: pd.DataFrame, test_data: Optional[pd.DataFrame],
-			validation_data: Optional[pd.DataFrame], out_dir: str, label: str
+			validation_data: Optional[pd.DataFrame], out_dir: str, label: str, multi_target: bool
 	) -> SnowfinchBroodCNN:
-		if test_data is None:
-			return self.__train_cnn__(cnn, train_data, validation_data)
+		trained_model = self.__train_cnn__(cnn, train_data, validation_data, multi_target)
 
-		trained_model = self.__train_cnn__(cnn, train_data, validation_data)
-
-		print(f'Training done, testing model with output dir {out_dir}')
-
-		validator = CNNValidator(test_data, label, n_workers = self.n_workers)
-		accuracy = validator.validate(trained_model, output = out_dir)
-
-		print(f'CNN accuracy: {accuracy}')
+		if test_data:
+			print(f'Training done, testing model with output dir {out_dir}')
+			validator = CNNValidator(test_data, label, n_workers = self.n_workers)
+			accuracy = validator.validate(trained_model, output = out_dir)
+			print(f'CNN accuracy: {accuracy}')
 
 		return trained_model

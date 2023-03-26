@@ -47,6 +47,7 @@ if __name__ == '__main__':
 	arg_parser.add_argument('-t', '--target', type = str, choices = ['size', 'age', 'all'], default = 'all')
 	arg_parser.add_argument('-c', '--split-config-path', type = str)
 	arg_parser.add_argument('--group-ages', type = str, default = '')
+	arg_parser.add_argument('--age-multi-target', action = 'store_true')
 	arg_parser.add_argument('--samples-per-class', type = str, default = 'min')
 	args = arg_parser.parse_args()
 
@@ -66,7 +67,8 @@ if __name__ == '__main__':
 		learn_rate = args.learning_rate,
 		target_label = None if args.event == 'all' else args.event,
 		age_groups = parse_age_groups(args.group_ages),
-		samples_per_class = args.samples_per_class
+		samples_per_class = args.samples_per_class,
+		age_multi_target = args.age_multi_target
 	)
 
 	with trainer:
