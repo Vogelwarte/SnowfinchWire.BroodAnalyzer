@@ -166,10 +166,11 @@ class CNNTrainer(ModelTrainer):
 			save_path = f'{self.work_dir}/models', num_workers = self.n_workers
 		)
 
+		print('Training finished, building final model')
+
 		trained_cnn = load_model(f'{self.work_dir}/models/best.model')
 		return SnowfinchBroodCNN(
 			trained_cnn,
-			multi_target = multi_target,
 			model_info = {
 				'learning_rate': cnn.optimizer_params['lr'],
 				'architecture': self.cnn_arch,
@@ -190,9 +191,11 @@ class CNNTrainer(ModelTrainer):
 		trained_model = self.__train_cnn__(cnn, train_data, validation_data, multi_target)
 
 		if test_data:
-			print(f'Training done, testing model with output dir {out_dir}')
+			print(f'Testing model with output dir {out_dir}')
 			validator = CNNValidator(test_data, label, n_workers = self.n_workers)
 			accuracy = validator.validate(trained_model, output = out_dir)
 			print(f'CNN accuracy: {accuracy}')
+		else:
+			print('No test data, skipping validation')
 
 		return trained_model

@@ -6,11 +6,11 @@ from sfw_brood.model import SnowfinchBroodClassifier, ModelType, ModelLoader
 
 
 class SnowfinchBroodCNN(SnowfinchBroodClassifier):
-	def __init__(self, trained_cnn: CNN, model_info: dict, multi_target = False, mt_threshold = 0.5):
+	def __init__(self, trained_cnn: CNN, model_info: dict):
 		super().__init__(ModelType.CNN, model_info)
 		self.cnn = trained_cnn
-		self.multi_target = multi_target
-		self.mt_threshold = mt_threshold
+		self.multi_target = model_info['multi_target']
+		self.mt_threshold = model_info['mt_threshold'] if 'mt_threshold' in model_info else 0.5
 
 	def predict(self, recording_paths: list[str], n_workers: int = 12) -> pd.DataFrame:
 		pred_result = self.cnn.predict(recording_paths, activation_layer = 'softmax', num_workers = n_workers)
