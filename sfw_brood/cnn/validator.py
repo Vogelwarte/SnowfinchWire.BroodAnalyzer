@@ -1,4 +1,5 @@
 import json
+from math import ceil
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -44,8 +45,12 @@ class CNNValidator(ModelValidator):
 
 			if multi_target:
 				multi_confusion_matrix = multilabel_confusion_matrix(y_true, y_pred)
+
 				n_classes = len(pred_classes)
-				fig, ax = plt.subplots(1, n_classes, figsize = (9, 3))
+				n_cm_cols = 4
+				n_cm_rows = ceil(n_classes / n_cm_cols)
+				fig, ax = plt.subplots(1, n_classes, figsize = (2 * n_cm_cols, 3 * n_cm_rows))
+
 				for axes, cm, label in zip(ax.flatten(), multi_confusion_matrix, pred_classes):
 					cm_disp = ConfusionMatrixDisplay(cm)
 					cm_disp.plot(xticks_rotation = 'vertical', ax = axes, colorbar = False, values_format = 'd')
