@@ -167,11 +167,10 @@ class CNNTrainer(ModelTrainer):
 		)
 
 		print('Training finished, building final model')
-
 		trained_cnn = load_model(f'{self.work_dir}/models/best.model')
-		return SnowfinchBroodCNN(
-			trained_cnn,
-			model_info = {
+		print('Loaded best saved model')
+
+		model_info = {
 				'learning_rate': cnn.optimizer_params['lr'],
 				'architecture': self.cnn_arch,
 				'train_epochs': trained_cnn.current_epoch,
@@ -182,6 +181,10 @@ class CNNTrainer(ModelTrainer):
 				'events': self.target_labels,
 				'multi_target': multi_target
 			}
+
+		return SnowfinchBroodCNN(
+			trained_cnn,
+			model_info = model_info
 		)
 
 	def __train_and_validate__(
