@@ -171,16 +171,18 @@ class CNNTrainer(ModelTrainer):
 		print('Loaded best saved model')
 
 		model_info = {
-				'learning_rate': cnn.optimizer_params['lr'],
-				'architecture': self.cnn_arch,
-				'train_epochs': trained_cnn.current_epoch,
-				'data': self.data_path,
-				'data_split': self.data_split,
-				'sample_duration_sec': self.sample_duration_sec,
-				'batch_size': self.batch_size,
-				'events': self.target_labels,
-				'multi_target': multi_target
-			}
+			'learning_rate': cnn.optimizer_params['lr'],
+			'architecture': self.cnn_arch,
+			'train_epochs': trained_cnn.current_epoch,
+			'data': self.data_path,
+			'data_split': self.data_split,
+			'sample_duration_sec': self.sample_duration_sec,
+			'batch_size': self.batch_size,
+			'events': self.target_labels,
+			'multi_target': multi_target
+		}
+
+		print(f'Model info:\n{model_info}')
 
 		return SnowfinchBroodCNN(
 			trained_cnn,
