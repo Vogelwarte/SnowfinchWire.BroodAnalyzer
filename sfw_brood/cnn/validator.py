@@ -15,7 +15,7 @@ class CNNValidator(ModelValidator):
 		rec_files = list(self.test_data.index)
 		classes = list(self.test_data.columns)
 
-		print(f'Running test prediction for {len(rec_files)}')
+		print(f'Running test prediction for {len(rec_files)} samples')
 		pred_df = model.predict(rec_files, n_workers = self.n_workers)
 		pred_classes = set(classes).intersection(set(pred_df.columns))
 		print(f'Classes present in prediction output: {pred_classes}')
@@ -26,8 +26,12 @@ class CNNValidator(ModelValidator):
 
 		if output:
 			print('Generating classification report and confusion matrix')
-			report = classification_report(y_true, y_pred, output_dict = True)
-			report_df = pd.DataFrame(report).transpose()
+
+			if multi_target:
+				report_df = None
+			else:
+				report = classification_report(y_true, y_pred, output_dict = True)
+				report_df = pd.DataFrame(report).transpose()
 
 			if multi_target:
 				n_classes = len(pred_classes)
@@ -44,10 +48,12 @@ class CNNValidator(ModelValidator):
 
 			if output == 'show':
 				plt.show()
-				print(report_df)
+				if report_df is not None:
+					print(report_df)
 			else:
 				plt.savefig(f'{output}/confusion-matrix.png')
-				report_df.to_csv(f'{output}/clf-report.csv')
+				if report_df is not None:
+					report_df.to_csv(f'{output}/clf-report.csv')
 				pred_df.to_csv(f'{output}/pred.csv')
 
 			print(f'Classification report and confusion matrix saved to {output}')
