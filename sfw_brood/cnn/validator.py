@@ -12,6 +12,8 @@ class CNNValidator(ModelValidator):
 		self.n_workers = n_workers
 
 	def validate(self, model: SnowfinchBroodClassifier, output = '', multi_target = False) -> float:
+		print(f'Performing CNN validation, multi target = {multi_target}')
+
 		rec_files = list(self.test_data.index)
 		classes = list(self.test_data.columns)
 
@@ -38,7 +40,7 @@ class CNNValidator(ModelValidator):
 				cm = multilabel_confusion_matrix(y_true, y_pred, labels = pred_classes)
 				fig, ax = plt.subplots(1, n_classes, figsize = (6, 6))
 				for i in range(n_classes):
-					cm_disp = ConfusionMatrixDisplay(cm)
+					cm_disp = ConfusionMatrixDisplay(cm[i])
 					cm_disp.plot(xticks_rotation = 'vertical', ax = ax, colorbar = False, values_format = 'd')
 					fig.tight_layout()
 			else:
