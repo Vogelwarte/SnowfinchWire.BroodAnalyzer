@@ -191,7 +191,7 @@ class CNNTrainer(ModelTrainer):
 		if test_data is not None:
 			print(f'Testing model with output dir {out_dir}')
 			validator = CNNValidator(test_data, label, n_workers = self.n_workers)
-			accuracy = validator.validate(trained_model, output = out_dir)
+			accuracy = validator.validate(trained_model, output = out_dir, multi_target = multi_target)
 			print(f'CNN accuracy: {accuracy}')
 		else:
 			print('No test data, skipping validation')
