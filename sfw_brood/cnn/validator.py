@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, classification_report, ConfusionMatrixDisplay, multilabel_confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, ConfusionMatrixDisplay, \
+	multilabel_confusion_matrix, label_ranking_average_precision_score
 
 from sfw_brood.model import ModelValidator, SnowfinchBroodClassifier
 
@@ -11,7 +12,7 @@ class CNNValidator(ModelValidator):
 		self.label = label
 		self.n_workers = n_workers
 
-	def validate(self, model: SnowfinchBroodClassifier, output = '', multi_target = False) -> float:
+	def validate(self, model: SnowfinchBroodClassifier, output = '', multi_target = False) -> dict:
 		print(f'Performing CNN validation, multi target = {multi_target}')
 
 		rec_files = list(self.test_data.index)
@@ -19,23 +20,27 @@ class CNNValidator(ModelValidator):
 
 		print(f'Running test prediction for {len(rec_files)} samples')
 		pred_df = model.predict(rec_files, n_workers = self.n_workers)
-		pred_classes = set(classes).intersection(set(pred_df.columns))
+		pred_classes = sorted(set(classes).intersection(set(pred_df.columns)))
 		print(f'Classes present in prediction output: {pred_classes}')
 
 		# y_pred = pred_df[pred_classes].idxmax(axis = 1)
 		y_pred = pred_df[pred_classes]
-		y_true = self.test_data.loc[pred_df.file, classes].idxmax(axis = 1)
+		# y_true = self.test_data.loc[pred_df.file, classes].idxmax(axis = 1)
+		y_true = self.test_data.loc[pred_df.file, pred_classes]
+
+		y_pred.to_csv(f'{output}/y-pred.csv')
+		y_true.to_csv(f'{output}/y-true.csv')
 
 		if output:
 			print('Generating classification report and confusion matrix')
 
 			if multi_target:
 				report_df = None
-				multi_confusion_matrix = multilabel_confusion_matrix(y_true, y_pred, labels = pred_classes)
+				multi_confusion_matrix = multilabel_confusion_matrix(y_true, y_pred)
 
 				n_classes = len(pred_classes)
 				fig, ax = plt.subplots(1, n_classes, figsize = (6, 6))
-				for axes, cm, label in zip(ax.flatten(), multi_confusion_matrix, ):
+				for axes, cm, label in zip(ax.flatten(), multi_confusion_matrix, pred_classes):
 					cm_disp = ConfusionMatrixDisplay(cm)
 					cm_disp.plot(xticks_rotation = 'vertical', ax = axes, colorbar = False, values_format = 'd')
 					axes.set_title(label)
@@ -61,4 +66,12 @@ class CNNValidator(ModelValidator):
 
 			print(f'Classification report and confusion matrix saved to {output}')
 
-		return accuracy_score(y_true, y_pred)
+		if multi_target:
+			return {
+				'subset_accuracy': accuracy_score(y_true, y_pred),
+				'label_ranking_precision': label_ranking_average_precision_score(y_true = y_true, y_score = y_pred)
+			}
+
+		return {
+			'accuracy': accuracy_score(y_true, y_pred)
+		}

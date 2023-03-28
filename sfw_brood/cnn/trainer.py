@@ -85,13 +85,13 @@ class CNNTrainer(ModelTrainer):
 		if age_groups:
 			ba_data = group_ages(ba_data, groups = age_groups, multi_target = age_multi_target)
 
-		self.bs_train_data, self.bs_val_data, self.bs_test_data = select_recordings(
-			bs_data, audio_path, self.samples_per_class, split_conf = rec_split['BS']
-		)
-		print(f'\nSize data:')
-		print(f'\ttrain: {self.bs_train_data.shape}')
-		print(f'\tvalidation: {self.bs_val_data.shape}')
-		print(f'\ttest: {self.bs_test_data.shape}')
+		# self.bs_train_data, self.bs_val_data, self.bs_test_data = select_recordings(
+		# 	bs_data, audio_path, self.samples_per_class, split_conf = rec_split['BS']
+		# )
+		# print(f'\nSize data:')
+		# print(f'\ttrain: {self.bs_train_data.shape}')
+		# print(f'\tvalidation: {self.bs_val_data.shape}')
+		# print(f'\ttest: {self.bs_test_data.shape}')
 
 		self.ba_train_data, self.ba_val_data, self.ba_test_data = select_recordings(
 			ba_data, audio_path, self.samples_per_class, split_conf = rec_split['BA']
@@ -191,8 +191,8 @@ class CNNTrainer(ModelTrainer):
 		if test_data is not None:
 			print(f'Testing model with output dir {out_dir}')
 			validator = CNNValidator(test_data, label, n_workers = self.n_workers)
-			accuracy = validator.validate(trained_model, output = out_dir, multi_target = multi_target)
-			print(f'CNN accuracy: {accuracy}')
+			test_result = validator.validate(trained_model, output = out_dir, multi_target = multi_target)
+			print(f'CNN test result: {test_result}')
 		else:
 			print('No test data, skipping validation')
 

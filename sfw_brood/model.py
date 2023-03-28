@@ -92,5 +92,5 @@ class ModelTrainer(ABC):
 
 class ModelValidator(ABC):
 	@abstractmethod
-	def validate(self, model: SnowfinchBroodClassifier, output = '', multi_target = False) -> float:
+	def validate(self, model: SnowfinchBroodClassifier, output = '', multi_target = False) -> dict:
 		pass
