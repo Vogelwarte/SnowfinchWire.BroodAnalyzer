@@ -74,6 +74,14 @@ on:
           - 5
           - 10
         default: s5.0-o1.0
+      age_mode:
+        description: Brood age classification mode
+        required: true
+        type: choice
+        options:
+          - single
+          - multi
+        default: single
 
 permissions:
   contents: read
@@ -122,6 +130,7 @@ jobs:
           -c "config/${{ github.event.inputs.data_split_config }}" --group-ages ${{ github.event.inputs.age_groups }} \
           -d ${{ github.event.inputs.sample_duration }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
+          --age-mode ${{ github.event.inputs.age_mode }} \
           "$WORK_DIR/out/s${{ github.event.inputs.sample_duration }}.0-o1.0" \
           "$WORK_DIR/s${{ github.event.inputs.sample_duration }}-o1/s${{ github.event.inputs.sample_duration }}.0-o1.0"
       - name: Store results
