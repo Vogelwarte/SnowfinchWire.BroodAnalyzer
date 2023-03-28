@@ -166,27 +166,20 @@ class CNNTrainer(ModelTrainer):
 			save_path = f'{self.work_dir}/models', num_workers = self.n_workers
 		)
 
-		print('Training finished, building final model')
 		trained_cnn = load_model(f'{self.work_dir}/models/best.model')
-		print('Loaded best saved model')
-
-		model_info = {
-			'learning_rate': cnn.optimizer_params['lr'],
-			'architecture': self.cnn_arch,
-			'train_epochs': trained_cnn.current_epoch,
-			'data': self.data_path,
-			'data_split': self.data_split,
-			'sample_duration_sec': self.sample_duration_sec,
-			'batch_size': self.batch_size,
-			'events': self.target_labels,
-			'multi_target': multi_target
-		}
-
-		print(f'Model info:\n{model_info}')
-
 		return SnowfinchBroodCNN(
 			trained_cnn,
-			model_info = model_info
+			model_info = {
+				'learning_rate': cnn.optimizer_params['lr'],
+				'architecture': self.cnn_arch,
+				'train_epochs': trained_cnn.current_epoch,
+				'data': self.data_path,
+				'data_split': self.data_split,
+				'sample_duration_sec': self.sample_duration_sec,
+				'batch_size': self.batch_size,
+				'events': self.target_labels,
+				'multi_target': multi_target
+			}
 		)
 
 	def __train_and_validate__(
@@ -195,7 +188,7 @@ class CNNTrainer(ModelTrainer):
 	) -> SnowfinchBroodCNN:
 		trained_model = self.__train_cnn__(cnn, train_data, validation_data, multi_target)
 
-		if test_data:
+		if test_data is not None:
 			print(f'Testing model with output dir {out_dir}')
 			validator = CNNValidator(test_data, label, n_workers = self.n_workers)
 			accuracy = validator.validate(trained_model, output = out_dir)

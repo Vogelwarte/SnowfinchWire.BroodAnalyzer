@@ -11,7 +11,6 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 		self.cnn = trained_cnn
 		self.multi_target = model_info['multi_target']
 		self.mt_threshold = model_info['mt_threshold'] if 'mt_threshold' in model_info else 0.5
-		print(f'Instantiated CnowfinchBroodCNN, multi target: {self.multi_target}, threshold: {self.mt_threshold}')
 
 	def predict(self, recording_paths: list[str], n_workers: int = 12) -> pd.DataFrame:
 		pred_result = self.cnn.predict(recording_paths, activation_layer = 'softmax', num_workers = n_workers)
