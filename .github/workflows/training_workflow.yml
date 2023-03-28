@@ -24,15 +24,15 @@ on:
         description: Batch size
         required: true
         default: 64
-      event:
-        description: Target event
-        type: choice
-        options:
-          - feeding
-          - contact
-          - all
-        required: true
-        default: feeding
+#      event:
+#        description: Target event
+#        type: choice
+#        options:
+#          - feeding
+#          - contact
+#          - all
+#        required: true
+#        default: feeding
       n_epochs:
         description: Training epochs count
         required: true
@@ -126,7 +126,7 @@ jobs:
           python -m sfw_brood.train \
           -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} -d 2.0 \
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
-          -e ${{ github.event.inputs.event }} -t ${{ github.event.inputs.target }} -w 12 \
+          -e feeding -t ${{ github.event.inputs.target }} -w 12 \
           -c "config/${{ github.event.inputs.data_split_config }}" --group-ages ${{ github.event.inputs.age_groups }} \
           -d ${{ github.event.inputs.sample_duration }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
