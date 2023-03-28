@@ -23,10 +23,12 @@ class CNNValidator(ModelValidator):
 		pred_classes = sorted(set(classes).intersection(set(pred_df.columns)))
 		print(f'Classes present in prediction output: {pred_classes}')
 
-		# y_pred = pred_df[pred_classes].idxmax(axis = 1)
-		y_pred = pred_df[pred_classes]
-		# y_true = self.test_data.loc[pred_df.file, classes].idxmax(axis = 1)
-		y_true = self.test_data.loc[pred_df.file, pred_classes]
+		if multi_target:
+			y_pred = pred_df[pred_classes]
+			y_true = self.test_data.loc[pred_df.file, pred_classes]
+		else:
+			y_pred = pred_df[pred_classes].idxmax(axis = 1)
+			y_true = self.test_data.loc[pred_df.file, classes].idxmax(axis = 1)
 
 		y_pred.to_csv(f'{output}/y-pred.csv')
 		y_true.to_csv(f'{output}/y-true.csv')
