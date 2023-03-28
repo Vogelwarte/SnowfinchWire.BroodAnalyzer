@@ -31,19 +31,20 @@ class CNNValidator(ModelValidator):
 
 			if multi_target:
 				report_df = None
+				multi_confusion_matrix = multilabel_confusion_matrix(y_true, y_pred, labels = pred_classes)
+
+				n_classes = len(pred_classes)
+				fig, ax = plt.subplots(1, n_classes, figsize = (6, 6))
+				for axes, cm, label in zip(ax.flatten(), multi_confusion_matrix, ):
+					cm_disp = ConfusionMatrixDisplay(cm)
+					cm_disp.plot(xticks_rotation = 'vertical', ax = axes, colorbar = False, values_format = 'd')
+					axes.set_title(label)
+
+				fig.tight_layout()
 			else:
 				report = classification_report(y_true, y_pred, output_dict = True)
 				report_df = pd.DataFrame(report).transpose()
 
-			if multi_target:
-				n_classes = len(pred_classes)
-				cm = multilabel_confusion_matrix(y_true, y_pred, labels = pred_classes)
-				fig, ax = plt.subplots(1, n_classes, figsize = (6, 6))
-				for i in range(n_classes):
-					cm_disp = ConfusionMatrixDisplay(cm[i])
-					cm_disp.plot(xticks_rotation = 'vertical', ax = ax, colorbar = False, values_format = 'd')
-					fig.tight_layout()
-			else:
 				ConfusionMatrixDisplay.from_predictions(y_true, y_pred)
 				plt.xlabel(f'Predicted {self.label}')
 				plt.ylabel(f'True {self.label}')
