@@ -53,19 +53,28 @@ on:
         options:
           - 0-5.5,6-8.5,9-11.5,12-14.5,15-30
           - 0-4.5,5-6.5,7-8.5,9-10.5,11-12.5,13-14.5,15-16.5,17-30
+          - no
+        default: 0-5.5,6-8.5,9-11.5,12-14.5,15-30
+      size_groups:
+        description: Wide classes for brood size
+        required: false
+        type: choice
+        options:
+          - 0-3,4-6
+          - no
         default: 0-5.5,6-8.5,9-11.5,12-14.5,15-30
       samples_per_class:
         description: Target count of samples per class
         required: true
         type: string
         default: max
-      data_split_config:
-        description: Data split configuration file
-        required: true
-        type: choice
-        options:
-          - data-split-server.json
-        default: data-split-server.json
+#      data_split_config:
+#        description: Data split configuration file
+#        required: true
+#        type: choice
+#        options:
+#          - data-split-server.json
+#        default: data-split-server.json
       sample_duration:
         description: Duration of train/test sound sample
         required: true
@@ -127,9 +136,10 @@ jobs:
           python -m sfw_brood.train \
           -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} -d 2.0 \
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
-          -e feeding -t ${{ github.event.inputs.target }} -w 12 \
-          -c "config/${{ github.event.inputs.data_split_config }}" --group-ages ${{ github.event.inputs.age_groups }} \
-          -d ${{ github.event.inputs.sample_duration }} \
+          -d ${{ github.event.inputs.sample_duration }} -t ${{ github.event.inputs.target }} \
+          -e feeding -c config/data-split-server.json -w 12 \
+          --group-ages ${{ github.event.inputs.age_groups }} \
+          --group-sizes ${{ github.event.inputs.size_groups }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
           --age-mode ${{ github.event.inputs.age_mode }} \
           "$WORK_DIR/out/s${{ github.event.inputs.sample_duration }}.0-o1.0" \

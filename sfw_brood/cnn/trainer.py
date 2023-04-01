@@ -25,13 +25,14 @@ def select_recordings(
 		data: pd.DataFrame, audio_path: str, cls_samples: str, split_conf: dict,
 		classes: Optional[list[str]] = None
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-	if 'classes' in split_conf.keys() and 'class' in data.columns:
-		classes = [str(cls) for cls in split_conf['classes']]
-		data = data[data['class'].astype('str').isin(classes)]
-	elif classes is None:
-		classes = set()
-		for cls_col in [col for col in data.columns if 'class' in col]:
-			classes.update(data[cls_col].unique())
+	if classes is None:
+		if 'classes' in split_conf.keys() and 'class' in data.columns:
+			classes = [str(cls) for cls in split_conf['classes']]
+			data = data[data['class'].astype('str').isin(classes)]
+		else:
+			classes = set()
+			for cls_col in [col for col in data.columns if 'class' in col]:
+				classes.update(data[cls_col].unique())
 
 	classes = sorted(classes)
 	selector = split_conf['selector']
