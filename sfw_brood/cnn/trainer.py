@@ -83,7 +83,17 @@ class CNNTrainer(ModelTrainer):
 		bs_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
 		bs_data = bs_data[~bs_data['is_silence'] & (bs_data['event'].isin(self.target_labels))]
 		if size_groups:
-			bs_data = group_sizes(bs_data, groups = size_groups)
+			bs_data, size_classes = group_sizes(bs_data, groups = size_groups)
+		else:
+			size_classes = None
+
+		self.bs_train_data, self.bs_val_data, self.bs_test_data = select_recordings(
+			bs_data, audio_path, self.samples_per_class, split_conf = rec_split['BS'], classes = size_classes
+		)
+		print(f'\nSize data:')
+		print(f'\ttrain: {self.bs_train_data.shape}')
+		print(f'\tvalidation: {self.bs_val_data.shape}')
+		print(f'\ttest: {self.bs_test_data.shape}')
 
 		ba_data = pd.read_csv(f'{data_path}/brood-age.csv', dtype = { 'is_silence': 'bool' })
 		ba_data = ba_data[~ba_data['is_silence'] & (ba_data['event'].isin(self.target_labels))]
@@ -91,14 +101,6 @@ class CNNTrainer(ModelTrainer):
 			ba_data, age_classes = group_ages(ba_data, groups = age_groups, multi_target = age_multi_target)
 		else:
 			age_classes = None
-
-		self.bs_train_data, self.bs_val_data, self.bs_test_data = select_recordings(
-			bs_data, audio_path, self.samples_per_class, split_conf = rec_split['BS']
-		)
-		print(f'\nSize data:')
-		print(f'\ttrain: {self.bs_train_data.shape}')
-		print(f'\tvalidation: {self.bs_val_data.shape}')
-		print(f'\ttest: {self.bs_test_data.shape}')
 
 		self.ba_train_data, self.ba_val_data, self.ba_test_data = select_recordings(
 			ba_data, audio_path, self.samples_per_class, split_conf = rec_split['BA'], classes = age_classes

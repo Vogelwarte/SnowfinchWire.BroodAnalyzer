@@ -224,7 +224,7 @@ def __groups_to_1hot__(groups_df: pd.DataFrame) -> pd.DataFrame:
 	return groups_df
 
 
-def group_sizes(size_df: pd.DataFrame, groups: list[tuple[float, float]]) -> pd.DataFrame:
+def group_sizes(size_df: pd.DataFrame, groups: list[tuple[float, float]]) -> tuple[pd.DataFrame, list[str]]:
 	group_labels = ['{:02}-{:02}'.format(low, high) for low, high in groups]
 
 	def map_size(size: float) -> str:
@@ -233,7 +233,7 @@ def group_sizes(size_df: pd.DataFrame, groups: list[tuple[float, float]]) -> pd.
 	size_group_df = size_df.rename(columns = { 'class': 'size' })
 	size_group_df['class'] = size_group_df['size'].apply(map_size)
 
-	return __groups_to_1hot__(size_group_df)
+	return __groups_to_1hot__(size_group_df), group_labels
 
 
 def group_ages(
