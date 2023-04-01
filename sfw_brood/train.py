@@ -17,7 +17,7 @@ def make_time_str() -> str:
 
 
 def parse_cls_groups(cls_groups: str) -> Optional[list[tuple[float, float]]]:
-	if not cls_groups or cls_groups == 'no':
+	if cls_groups == 'none':
 		return None
 
 	out_groups = []
@@ -46,8 +46,8 @@ if __name__ == '__main__':
 	arg_parser.add_argument('-e', '--event', type = str, choices = ['feeding', 'contact', 'all'], default = 'all')
 	arg_parser.add_argument('-t', '--target', type = str, choices = ['size', 'age', 'all'], default = 'all')
 	arg_parser.add_argument('-c', '--split-config-path', type = str)
-	arg_parser.add_argument('--group-ages', type = str, default = 'no')
-	arg_parser.add_argument('--group-sizes', type = str, default = 'no')
+	arg_parser.add_argument('--group-ages', type = str, default = 'none')
+	arg_parser.add_argument('--group-sizes', type = str, default = 'none')
 	arg_parser.add_argument('--age-mode', type = str, choices = ['single', 'multi'], default = 'single')
 	arg_parser.add_argument('--samples-per-class', type = str, default = 'min')
 	args = arg_parser.parse_args()
