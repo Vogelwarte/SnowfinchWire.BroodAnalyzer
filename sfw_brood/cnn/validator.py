@@ -1,12 +1,19 @@
 import json
 from math import ceil
 
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, ConfusionMatrixDisplay, \
+from sklearn.metrics import accuracy_score, ConfusionMatrixDisplay, confusion_matrix, \
 	multilabel_confusion_matrix, label_ranking_average_precision_score
 
 from sfw_brood.model import ModelValidator, SnowfinchBroodClassifier
+
+
+def normalize_confusion_matrix(cm: np.ndarray) -> np.ndarray:
+	div = cm.sum(axis = 1, keepdims = True)
+	div = np.where(div > 0, div, 1)
+	return cm / div
 
 
 class CNNValidator(ModelValidator):
@@ -47,18 +54,24 @@ class CNNValidator(ModelValidator):
 				multi_confusion_matrix = multilabel_confusion_matrix(y_true, y_pred)
 
 				n_classes = len(pred_classes)
-				n_cm_cols = 4
+				n_cm_cols = min(4, n_classes)
 				n_cm_rows = ceil(n_classes / n_cm_cols)
 				fig, ax = plt.subplots(n_cm_rows, n_cm_cols, figsize = (2 * n_cm_cols, 3 * n_cm_rows))
 
 				for axes, cm, label in zip(ax.flatten(), multi_confusion_matrix, pred_classes):
-					cm_disp = ConfusionMatrixDisplay(cm)
-					cm_disp.plot(xticks_rotation = 'vertical', ax = axes, colorbar = False, values_format = 'd')
+					cm_disp = ConfusionMatrixDisplay(normalize_confusion_matrix(cm))
+					cm_disp.plot(ax = axes, colorbar = False)
 					axes.set_title(label)
+
+				fig.tight_layout()
 			else:
-				ConfusionMatrixDisplay.from_predictions(y_true, y_pred)
+				fix, axes = plt.subplots()
+				cm = confusion_matrix(y_true, y_pred)
+				cm_disp = ConfusionMatrixDisplay(normalize_confusion_matrix(cm))
+				cm_disp.plot(ax = axes, colorbar = False)
 				plt.xlabel(f'Predicted {self.label}')
 				plt.ylabel(f'True {self.label}')
+				fix.tight_layout()
 
 			if output == 'show':
 				plt.show()

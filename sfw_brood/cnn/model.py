@@ -10,10 +10,11 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 		super().__init__(ModelType.CNN, model_info)
 		self.cnn = trained_cnn
 		self.multi_target = model_info['multi_target']
-		self.mt_threshold = model_info['mt_threshold'] if 'mt_threshold' in model_info else 0.5
+		self.mt_threshold = model_info['mt_threshold'] if 'mt_threshold' in model_info else 0.9
 
 	def predict(self, recording_paths: list[str], n_workers: int = 12) -> pd.DataFrame:
-		pred_result = self.cnn.predict(recording_paths, activation_layer = 'softmax', num_workers = n_workers)
+		activation = 'sigmoid' if self.multi_target else 'softmax'
+		pred_result = self.cnn.predict(recording_paths, activation_layer = activation, num_workers = n_workers)
 		result_df = pred_result[0] if type(pred_result) == tuple else pred_result
 
 		if self.multi_target:
