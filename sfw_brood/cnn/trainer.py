@@ -5,7 +5,7 @@ import pandas as pd
 from opensoundscape.torch.models.cnn import CNN, InceptionV3, load_model, use_resample_loss
 
 from sfw_brood.model import ModelTrainer
-from sfw_brood.preprocessing import balance_data, group_ages
+from sfw_brood.preprocessing import balance_data, group_ages, group_sizes
 from .model import SnowfinchBroodCNN
 from .util import cleanup
 from .validator import CNNValidator
@@ -22,17 +22,18 @@ def __format_data__(
 
 
 def select_recordings(
-		data: pd.DataFrame, audio_path: str, cls_samples: str, split_conf: dict
+		data: pd.DataFrame, audio_path: str, cls_samples: str, split_conf: dict,
+		classes: Optional[list[str]] = None
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 	if 'classes' in split_conf.keys() and 'class' in data.columns:
-		classes = [str(cls) for cls in sorted(split_conf['classes'])]
+		classes = [str(cls) for cls in split_conf['classes']]
 		data = data[data['class'].astype('str').isin(classes)]
-	else:
+	elif classes is None:
 		classes = set()
 		for cls_col in [col for col in data.columns if 'class' in col]:
 			classes.update(data[cls_col].unique())
-		classes = list(classes)
 
+	classes = sorted(classes)
 	selector = split_conf['selector']
 
 	test_idx = data[selector].isin(split_conf['test'])
@@ -60,8 +61,9 @@ class CNNTrainer(ModelTrainer):
 			sample_duration_sec: float, rec_split: dict,
 			cnn_arch: str, n_epochs: int, n_workers = 12, batch_size = 100, learn_rate = 0.001,
 			target_label: Optional[str] = None, remove_silence: bool = True,
-			age_groups: Optional[list[tuple[float, float]]] = None, samples_per_class = 'min',
-			age_multi_target = False
+			age_groups: Optional[list[tuple[float, float]]] = None,
+			size_groups: Optional[list[tuple[float, float]]] = None,
+			samples_per_class = 'min', age_multi_target = False
 	):
 		self.cnn_arch = cnn_arch
 		self.n_epochs = n_epochs
@@ -79,11 +81,15 @@ class CNNTrainer(ModelTrainer):
 
 		bs_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
 		bs_data = bs_data[~bs_data['is_silence'] & (bs_data['event'].isin(self.target_labels))]
+		if size_groups:
+			bs_data = group_sizes(bs_data, groups = size_groups)
 
 		ba_data = pd.read_csv(f'{data_path}/brood-age.csv', dtype = { 'is_silence': 'bool' })
 		ba_data = ba_data[~ba_data['is_silence'] & (ba_data['event'].isin(self.target_labels))]
 		if age_groups:
-			ba_data = group_ages(ba_data, groups = age_groups, multi_target = age_multi_target)
+			ba_data, age_classes = group_ages(ba_data, groups = age_groups, multi_target = age_multi_target)
+		else:
+			age_classes = None
 
 		self.bs_train_data, self.bs_val_data, self.bs_test_data = select_recordings(
 			bs_data, audio_path, self.samples_per_class, split_conf = rec_split['BS']
@@ -94,7 +100,7 @@ class CNNTrainer(ModelTrainer):
 		print(f'\ttest: {self.bs_test_data.shape}')
 
 		self.ba_train_data, self.ba_val_data, self.ba_test_data = select_recordings(
-			ba_data, audio_path, self.samples_per_class, split_conf = rec_split['BA']
+			ba_data, audio_path, self.samples_per_class, split_conf = rec_split['BA'], classes = age_classes
 		)
 		print(f'\nAge data:')
 		print(f'\ttrain: {self.ba_train_data.shape}')

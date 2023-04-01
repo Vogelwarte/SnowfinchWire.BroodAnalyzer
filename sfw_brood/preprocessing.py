@@ -197,50 +197,78 @@ def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overl
 	return slices
 
 
-def group_ages(age_df: pd.DataFrame, groups: list[tuple[float, float]], multi_target = False) -> pd.DataFrame:
+def __map_class_to_group__(cls: float, groups: list[tuple[float, float]], group_labels: list[str]) -> str:
+	for (low, high), label in zip(groups, group_labels):
+		if low <= cls <= high:
+			return label
+	return 'none'
+
+
+# this function modifies input data frame
+def __groups_to_1hot__(groups_df: pd.DataFrame) -> pd.DataFrame:
+	groups_df = groups_df \
+		.sort_values(by = 'class') \
+		.reset_index() \
+		.drop(columns = 'index')
+
+	groups_encoder = OneHotEncoder()
+	groups_1hot = groups_encoder.fit_transform(groups_df['class'].values.reshape(-1, 1))
+	groups_1hot_df = pd.DataFrame(
+		data = groups_1hot.toarray(),
+		columns = groups_encoder.categories_
+	)
+
+	group_1hot_columns = [col[0] for col in groups_1hot_df.columns]
+	groups_df[group_1hot_columns] = groups_1hot_df[group_1hot_columns]
+
+	return groups_df
+
+
+def group_sizes(size_df: pd.DataFrame, groups: list[tuple[float, float]]) -> pd.DataFrame:
+	group_labels = ['{:02}-{:02}'.format(low, high) for low, high in groups]
+
+	def map_size(size: float) -> str:
+		return __map_class_to_group__(size, groups, group_labels)
+
+	size_group_df = size_df.rename(columns = { 'class': 'size' })
+	size_group_df['class'] = size_group_df['size'].apply(map_size)
+
+	return __groups_to_1hot__(size_group_df)
+
+
+def group_ages(
+		age_df: pd.DataFrame, groups: list[tuple[float, float]], multi_target = False
+) -> tuple[pd.DataFrame, list[str]]:
 	group_labels = ['{:04.1f}-{:04.1f}'.format(low, high) for low, high in groups]
-
-	def map_age(age: float) -> str:
-		for (low, high), label in zip(groups, group_labels):
-			if low <= age <= high:
-				return label
-		return 'none'
-
 	age_group_df = age_df.rename(columns = {
 		'class_min': 'age_min',
 		'class_max': 'age_max'
 	})
-	age_group_df['class_min'] = age_group_df['age_min'].apply(map_age)
-	age_group_df['class_max'] = age_group_df['age_max'].apply(map_age)
 
 	if multi_target:
-		for cls in group_labels:
-			is_cls = (age_group_df['class_min'] == cls) | (age_group_df['class_max'] == cls)
-			age_group_df[cls] = is_cls.astype('float')
+		for (low, high), label in zip(groups, group_labels):
+			is_cls_min = (age_group_df['age_min'] >= low) & (age_group_df['age_min'] <= high)
+			is_cls_max = (age_group_df['age_max'] >= low) & (age_group_df['age_max'] <= high)
+			is_cls_between = (age_group_df['age_min'] < low) & (age_group_df['age_max'] > high)
+			is_cls = is_cls_min | is_cls_max | is_cls_between
+			age_group_df[label] = is_cls.astype('float')
 
 		age_group_df = age_group_df \
 			.reset_index() \
 			.drop(columns = 'index')
 	else:
-		age_group_df = age_group_df[age_group_df['class_min'] == age_group_df['class_max']]
-		age_group_df = age_group_df \
-			.drop(columns = ['class_min']) \
-			.rename(columns = { 'class_max': 'class' }) \
-			.sort_values(by = 'class') \
-			.reset_index() \
-			.drop(columns = 'index')
+		def map_age(age: float) -> str:
+			return __map_class_to_group__(age, groups, group_labels)
 
-		groups_encoder = OneHotEncoder()
-		groups_1hot = groups_encoder.fit_transform(age_group_df['class'].values.reshape(-1, 1))
-		groups_1hot_df = pd.DataFrame(
-			data = groups_1hot.toarray(),
-			columns = groups_encoder.categories_
+		age_group_df['class_min'] = age_group_df['age_min'].apply(map_age)
+		age_group_df['class_max'] = age_group_df['age_max'].apply(map_age)
+		age_group_df = __groups_to_1hot__(
+			groups_df = age_group_df[age_group_df['class_min'] == age_group_df['class_max']] \
+				.drop(columns = ['class_min']) \
+				.rename(columns = { 'class_max': 'class' })
 		)
 
-		group_1hot_columns = [col[0] for col in groups_1hot_df.columns]
-		age_group_df[group_1hot_columns] = groups_1hot_df[group_1hot_columns]
-
-	return age_group_df
+	return age_group_df, group_labels
 
 
 def __make_training_frame__(
