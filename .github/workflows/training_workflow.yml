@@ -19,7 +19,7 @@ on:
       learning_rate:
         description: Learning rate
         required: true
-        default: 0.001
+        default: 0.0005
       batch_size:
         description: Batch size
         required: true
@@ -36,7 +36,7 @@ on:
       n_epochs:
         description: Training epochs count
         required: true
-        default: 50
+        default: 30
       target:
         description: Predition target
         required: true
@@ -67,7 +67,7 @@ on:
         description: Target count of samples per class
         required: true
         type: string
-        default: max
+        default: 10_000
 #      data_split_config:
 #        description: Data split configuration file
 #        required: true
@@ -83,7 +83,7 @@ on:
           - 2
           - 5
           - 10
-        default: s5.0-o1.0
+        default: 5
       age_mode:
         description: Brood age classification mode
         required: true
