@@ -12,6 +12,7 @@ def main():
 	arg_parser.add_argument('-d', '--data-dir', type = str)
 	arg_parser.add_argument('-n', '--n-epochs', type = int)
 	arg_parser.add_argument('-c', '--config-path', type = str)
+	arg_parser.add_argument('-a', '--accelerator', type = str, default = 'gpu')
 	args = arg_parser.parse_args()
 
 	dataset_basedir = args.data_dir
@@ -30,7 +31,7 @@ def main():
 
 	# Lets modify some trainer configs for this demo
 	# Checks if we have GPU available and uses it
-	accelerator = 'gpu' if torch.cuda.is_available() else 'cpu'
+	accelerator = args.accelerator
 	config.trainer.devices = 1
 	config.trainer.accelerator = accelerator
 	config.trainer.max_epochs = args.n_epochs
