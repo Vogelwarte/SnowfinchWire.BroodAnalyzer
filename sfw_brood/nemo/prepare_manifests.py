@@ -74,6 +74,7 @@ def main():
 	arg_parser.add_argument('-d', '--data-dir', type = str)
 	arg_parser.add_argument('-c', '--split-conf-path', type = str)
 	arg_parser.add_argument('-s', '--samples-per-class', type = int)
+	arg_parser.add_argument('-t', '--target', type = str, choices = ['BA', 'BS'])
 	args = arg_parser.parse_args()
 
 	with open(args.split_conf_path) as split_conf_file:
@@ -82,7 +83,7 @@ def main():
 	prepare_manifests(
 		data = pd.read_csv(args.in_path, dtype = {'class': str}),
 		data_dir = Path(args.data_dir),
-		split_conf = split_conf['BS'],
+		split_conf = split_conf[args.target],
 		samples_per_class = args.samples_per_class,
 		out_dir = Path(args.out_path)
 	)

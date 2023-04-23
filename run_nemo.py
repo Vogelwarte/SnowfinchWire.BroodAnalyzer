@@ -1,10 +1,54 @@
 import argparse
 import os
+from pathlib import Path
+
+import numpy as np
+from matplotlib import pyplot as plt
 from omegaconf import OmegaConf
 import nemo.collections.asr as nemo_asr
 import torch
 import pytorch_lightning as pl
 from nemo.utils.exp_manager import exp_manager
+from sklearn.metrics import ConfusionMatrixDisplay
+from torchmetrics import Accuracy, ConfusionMatrix
+
+
+def plot_confusion_matrix(cm: np.ndarray, labels: list, out_path: Path):
+	fig, ax = plt.subplots(figsize = (6, 6))
+	cm_disp = ConfusionMatrixDisplay(cm.round().astype('int'), display_labels = labels)
+	cm_disp.plot(xticks_rotation = 'vertical', ax = ax, colorbar = False, values_format = 'd')
+	fig.tight_layout()
+	plt.savefig(out_path)
+
+
+@torch.no_grad()
+def test(model, config) -> tuple[float, np.ndarray]:
+	model.setup_test_data(config.model.test_ds)
+	data_loader = model._test_dl
+
+	n_classes = data_loader.dataset.num_classes
+	accuracy = Accuracy(task = 'multiclass', num_classes = n_classes)
+	confusion_matrix = ConfusionMatrix(task = 'multiclass', num_classes = n_classes)
+
+	for batch in data_loader:
+		audio_signal, audio_signal_len, labels, labels_len = batch
+		logits = model(input_signal = audio_signal, input_signal_length = audio_signal_len)
+
+		_, pred = logits.topk(1, dim=1, largest=True, sorted=True)
+		pred = pred.squeeze()
+
+		accuracy.update(pred, labels)
+		confusion_matrix.update(pred, labels)
+
+		print('.', end = '')
+
+	print()
+	print('Finished custom test step!')
+
+	confusion_matrix = confusion_matrix.compute().detach().cpu().numpy()
+	accuracy = accuracy.compute().detach().cpu()
+
+	return accuracy, confusion_matrix
 
 
 def main():
@@ -13,6 +57,7 @@ def main():
 	arg_parser.add_argument('-n', '--n-epochs', type = int)
 	arg_parser.add_argument('-c', '--config-path', type = str)
 	arg_parser.add_argument('-a', '--accelerator', type = str, default = 'gpu')
+	arg_parser.add_argument('--from-checkpoint', type = str, default = None)
 	args = arg_parser.parse_args()
 
 	dataset_basedir = args.data_dir
@@ -29,22 +74,30 @@ def main():
 	config.model.validation_ds.manifest_filepath = val_dataset
 	config.model.test_ds.manifest_filepath = test_dataset
 
-	# Lets modify some trainer configs for this demo
-	# Checks if we have GPU available and uses it
-	accelerator = args.accelerator
-	config.trainer.devices = 1
-	config.trainer.accelerator = accelerator
-	config.trainer.max_epochs = args.n_epochs
+	ckpt_path = args.from_checkpoint
+	if ckpt_path:
+		asr_model = nemo_asr.models.EncDecClassificationModel.load_from_checkpoint(ckpt_path)
+	else:
+		# Lets modify some trainer configs for this demo
+		# Checks if we have GPU available and uses it
+		accelerator = args.accelerator
+		config.trainer.devices = 1
+		config.trainer.accelerator = accelerator
+		config.trainer.max_epochs = args.n_epochs
 
-	# Remove distributed training flags
-	config.trainer.strategy = None
+		# Remove distributed training flags
+		config.trainer.strategy = None
 
-	trainer = pl.Trainer(**config.trainer)
+		trainer = pl.Trainer(**config.trainer)
 
-	exp_dir = exp_manager(trainer, config.get("exp_manager", None))
-	asr_model = nemo_asr.models.EncDecClassificationModel(cfg = config.model, trainer = trainer)
-	trainer.fit(asr_model)
-	trainer.test(asr_model, ckpt_path = None)
+		exp_dir = exp_manager(trainer, config.get("exp_manager", None))
+		asr_model = nemo_asr.models.EncDecClassificationModel(cfg = config.model, trainer = trainer)
+		trainer.fit(asr_model)
+
+	accuracy, cm = test(asr_model, config)
+	print(f'Model accuracy = {accuracy}')
+
+	plot_confusion_matrix(cm, labels = config.model.labels, out_path = exp_dir.joinpath('confusion-matrix.png'))
 
 
 if __name__ == '__main__':
