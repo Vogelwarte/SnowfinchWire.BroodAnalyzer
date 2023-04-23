@@ -1,6 +1,7 @@
 import argparse
 import json
 from pathlib import Path
+from typing import List, Optional
 
 import pandas as pd
 from tqdm import tqdm
@@ -17,7 +18,7 @@ def create_dataset_manifest(dataset_id: str, data: pd.DataFrame, data_dir: Path,
 			manifest.write(f'{json.dumps(row_json)}\n')
 
 
-def sample_data(data: pd.DataFrame, classes: list[str], samples_per_class: int | None = None) -> pd.DataFrame:
+def sample_data(data: pd.DataFrame, classes: List[str], samples_per_class: Optional[int] = None) -> pd.DataFrame:
 	if samples_per_class is None:
 		data_agg = data[['file', 'class']].groupby('class').count()
 		samples_per_class = data_agg['file'].min()

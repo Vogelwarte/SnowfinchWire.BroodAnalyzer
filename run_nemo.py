@@ -1,3 +1,4 @@
+import argparse
 import os
 from omegaconf import OmegaConf
 import nemo.collections.asr as nemo_asr
@@ -5,20 +6,20 @@ import torch
 import pytorch_lightning as pl
 from nemo.utils.exp_manager import exp_manager
 
-model_config = 'matchboxnet_3x1x64_v1.yaml'
-data_dir = '/home/bartosz/nemo-data'
-
 
 def main():
-	dataset_path = 'google_speech_recognition_v1'
-	dataset_basedir = os.path.join(data_dir, dataset_path)
+	arg_parser = argparse.ArgumentParser()
+	arg_parser.add_argument('-d', '--data-dir', type = str)
+	arg_parser.add_argument('-n', '--n-epochs', type = int)
+	arg_parser.add_argument('-c', '--config-path', type = str)
+	args = arg_parser.parse_args()
 
+	dataset_basedir = args.data_dir
 	train_dataset = os.path.join(dataset_basedir, 'train_manifest.json')
 	val_dataset = os.path.join(dataset_basedir, 'validation_manifest.json')
 	test_dataset = os.path.join(dataset_basedir, 'validation_manifest.json')
 
-	config_path = f'config/{model_config}'
-	config = OmegaConf.load(config_path)
+	config = OmegaConf.load(args.config_path)
 	config = OmegaConf.to_container(config, resolve = True)
 	config = OmegaConf.create(config)
 	print(OmegaConf.to_yaml(config))
