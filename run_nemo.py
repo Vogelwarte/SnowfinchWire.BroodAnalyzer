@@ -1,6 +1,7 @@
 import argparse
 import os
 from pathlib import Path
+from typing import Tuple
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -22,7 +23,7 @@ def plot_confusion_matrix(cm: np.ndarray, labels: list, out_path: Path):
 
 
 @torch.no_grad()
-def test(model, config) -> tuple[float, np.ndarray]:
+def test(model, config) -> Tuple[float, np.ndarray]:
 	model.setup_test_data(config.model.test_ds)
 	data_loader = model._test_dl
 
@@ -54,8 +55,8 @@ def test(model, config) -> tuple[float, np.ndarray]:
 def main():
 	arg_parser = argparse.ArgumentParser()
 	arg_parser.add_argument('-d', '--data-dir', type = str)
-	arg_parser.add_argument('-n', '--n-epochs', type = int)
 	arg_parser.add_argument('-c', '--config-path', type = str)
+	arg_parser.add_argument('-n', '--n-epochs', type = int, default = 20)
 	arg_parser.add_argument('-a', '--accelerator', type = str, default = 'gpu')
 	arg_parser.add_argument('--from-checkpoint', type = str, default = None)
 	args = arg_parser.parse_args()
