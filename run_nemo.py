@@ -17,16 +17,12 @@ def main():
 	dataset_basedir = args.data_dir
 	train_dataset = os.path.join(dataset_basedir, 'train_manifest.json')
 	val_dataset = os.path.join(dataset_basedir, 'validation_manifest.json')
-	test_dataset = os.path.join(dataset_basedir, 'validation_manifest.json')
+	test_dataset = os.path.join(dataset_basedir, 'test_manifest.json')
 
 	config = OmegaConf.load(args.config_path)
 	config = OmegaConf.to_container(config, resolve = True)
 	config = OmegaConf.create(config)
 	print(OmegaConf.to_yaml(config))
-
-	# Preserve some useful parameters
-	labels = config.model.labels
-	sample_rate = config.model.sample_rate
 
 	config.model.train_ds.manifest_filepath = train_dataset
 	config.model.validation_ds.manifest_filepath = val_dataset
@@ -37,9 +33,7 @@ def main():
 	accelerator = 'gpu' if torch.cuda.is_available() else 'cpu'
 	config.trainer.devices = 1
 	config.trainer.accelerator = accelerator
-
-	# Reduces maximum number of epochs to 5 for quick demonstration
-	config.trainer.max_epochs = 5
+	config.trainer.max_epochs = args.n_epochs
 
 	# Remove distributed training flags
 	config.trainer.strategy = None
