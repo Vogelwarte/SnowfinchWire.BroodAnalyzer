@@ -1,4 +1,4 @@
-name: &name "MatchboxNet-sfw-brood-size"
+name: &name "MatchboxNet-sfw-brood-age"
 
 model:
   sample_rate: 48000
@@ -7,8 +7,8 @@ model:
   dropout: 0.0
   kernel_size_factor: 1.0
 
-  labels_full: ['2', '3', '4', '5']
-  labels_subset: ['2', '3', '4', '5']
+  labels_full: ['00.0-05.5', '06.0-08.5', '09.0-11.5', '12.0-14.5', '15.0-30.0']
+  labels_subset: ['00.0-05.5', '06.0-08.5', '09.0-11.5', '12.0-14.5', '15.0-30.0']
 
   labels: ${model.labels_full}
 
