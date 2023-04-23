@@ -78,6 +78,9 @@ def main():
 	ckpt_path = args.from_checkpoint
 	if ckpt_path:
 		asr_model = nemo_asr.models.EncDecClassificationModel.load_from_checkpoint(ckpt_path)
+		ckpt_path = Path(ckpt_path)
+		exp_dir = ckpt_path.parent.joinpath(ckpt_path.stem)
+		exp_dir.mkdir(exist_ok = True, parents = True)
 	else:
 		# Lets modify some trainer configs for this demo
 		# Checks if we have GPU available and uses it

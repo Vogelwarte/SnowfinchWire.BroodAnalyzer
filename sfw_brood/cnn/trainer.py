@@ -5,55 +5,14 @@ import pandas as pd
 from opensoundscape.torch.models.cnn import CNN, InceptionV3, load_model, use_resample_loss
 
 from sfw_brood.model import ModelTrainer
-from sfw_brood.preprocessing import balance_data, group_ages, group_sizes
+from sfw_brood.preprocessing import group_ages, group_sizes
+from .preprocessing import select_recordings
 from .model import SnowfinchBroodCNN
 from .util import cleanup
 from .validator import CNNValidator
 
 
-def __format_data__(
-		data: pd.DataFrame, audio_path: str, classes: list[str], cls_samples: Optional[str] = None
-) -> pd.DataFrame:
-	data['file'] = audio_path + '/' + data['file']
-	data = data.set_index('file')
-	if cls_samples:
-		return balance_data(data[classes], classes, cls_samples)
-	return data[classes]
 
-
-def select_recordings(
-		data: pd.DataFrame, audio_path: str, cls_samples: str, split_conf: dict,
-		classes: Optional[list[str]] = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-	if classes is None:
-		if 'classes' in split_conf.keys() and 'class' in data.columns:
-			classes = [str(cls) for cls in split_conf['classes']]
-			data = data[data['class'].astype('str').isin(classes)]
-		else:
-			classes = set()
-			for cls_col in [col for col in data.columns if 'class' in col]:
-				classes.update(data[cls_col].unique())
-
-	classes = sorted(classes)
-	selector = split_conf['selector']
-
-	test_idx = data[selector].isin(split_conf['test'])
-	test_df = __format_data__(data[test_idx], audio_path, classes)
-
-	val_idx = data[selector].isin(split_conf['validation'])
-	val_df = __format_data__(data[val_idx], audio_path, classes)
-
-	train_df = __format_data__(data[~(test_idx | val_idx)], audio_path, classes, cls_samples)
-	test_size = round(0.45 * len(train_df))
-	val_size = round(0.2 * len(train_df))
-
-	if test_size < len(test_df):
-		test_df = test_df.sample(n = test_size)
-
-	if val_size < len(val_df):
-		val_df = val_df.sample(n = val_size)
-
-	return train_df, val_df, test_df
 
 
 class CNNTrainer(ModelTrainer):
