@@ -7,11 +7,8 @@ model:
   dropout: 0.0
   kernel_size_factor: 1.0
 
-  labels_full: ['bed', 'bird', 'cat', 'dog', 'down', 'eight', 'five', 'four', 'go', 'happy', 'house', 'left', 'marvin',
-           'nine', 'no', 'off', 'on', 'one', 'right', 'seven', 'sheila', 'six', 'stop', 'three', 'tree', 'two', 'up',
-           'wow', 'yes', 'zero']
-
-  labels_subset: ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go", "unknown", "silence"]
+  labels_full: ['2', '3', '4', '5']
+  labels_subset: ['2', '3', '4', '5']
 
   labels: ${model.labels_full}
 
