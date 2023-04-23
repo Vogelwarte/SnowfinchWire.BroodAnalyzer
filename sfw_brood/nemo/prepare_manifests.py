@@ -61,6 +61,7 @@ def prepare_manifests(data: pd.DataFrame, data_dir: Path, split_conf: dict, samp
 	if val_size < len(val_df):
 		val_df = val_df.sample(n = val_size)
 
+	out_dir.mkdir(parents = True, exist_ok = True)
 	create_dataset_manifest('train', train_df, data_dir, out_dir)
 	create_dataset_manifest('test', test_df, data_dir, out_dir)
 	create_dataset_manifest('validation', val_df, data_dir, out_dir)
