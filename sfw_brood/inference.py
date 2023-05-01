@@ -60,7 +60,8 @@ class Inference:
 				recording = load_recording_data(rec_path, include_brood_info = False)
 				audio_samples = filter_recording(recording, target_labels = ['feeding'])
 
-				work_dir = self.work_dir.joinpath(rec_path.parent).joinpath(rec_path.stem)
+				rec_path_rel = rec_path.relative_to(rec_path.root) if rec_path.is_absolute() else rec_path
+				work_dir = self.work_dir.joinpath(rec_path_rel.parent).joinpath(rec_path.stem)
 				work_dir.mkdir(exist_ok = True, parents = True)
 
 				for i, (sample, _) in enumerate(audio_samples):
