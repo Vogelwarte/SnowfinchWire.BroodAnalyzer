@@ -60,9 +60,11 @@ class Inference:
 				recording = load_recording_data(rec_path, include_brood_info = False)
 				audio_samples = filter_recording(recording, target_labels = ['feeding'])
 
+				work_dir = self.work_dir.joinpath(rec_path.parent).joinpath(rec_path.stem)
+				work_dir.mkdir(exist_ok = True, parents = True)
+
 				for i, (sample, _) in enumerate(audio_samples):
-					sample_prefix = rec_path.parent.as_posix().replace('/', '-')
-					sample_path = self.work_dir.joinpath(f'{sample_prefix}-{rec_path.stem}.{i}.wav')
+					sample_path = work_dir.joinpath(f'{i}.wav')
 					sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
 					sample_paths.append(sample_path.as_posix())
 
@@ -70,7 +72,7 @@ class Inference:
 
 	def __extract_rec_path__(self, sample_path: str) -> str:
 		sample_path = Path(sample_path)
-		return sample_path.parent.joinpath(sample_path.stem.split('.')[0]).as_posix()
+		return sample_path.parent.relative_to(self.work_dir).as_posix()
 
 	def __extract_brood_id__(self, rec_path: str) -> str:
 		return Path(rec_path).parent.parent.stem
