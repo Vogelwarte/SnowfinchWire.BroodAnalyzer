@@ -61,7 +61,7 @@ class Inference:
 				audio_samples = filter_recording(recording, target_labels = ['feeding'])
 
 				for i, (sample, _) in enumerate(audio_samples):
-					sample_prefix = rec_path.parent.relative_to(audio_path.parent).as_posix().replace('/', '-')
+					sample_prefix = rec_path.parent.as_posix().replace('/', '-')
 					sample_path = self.work_dir.joinpath(f'{sample_prefix}-{rec_path.stem}.{i}.wav')
 					sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
 					sample_paths.append(sample_path.as_posix())
