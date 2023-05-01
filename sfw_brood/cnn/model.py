@@ -9,7 +9,7 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 	def __init__(self, trained_cnn: CNN, model_info: dict):
 		super().__init__(ModelType.CNN, model_info)
 		self.cnn = trained_cnn
-		self.multi_target = model_info['multi_target']
+		self.multi_target = model_info['multi_target'] if 'multi_target' in model_info.keys() else False
 		self.mt_threshold = model_info['mt_threshold'] if 'mt_threshold' in model_info else 0.9
 
 	def predict(self, recording_paths: list[str], n_workers: int = 12) -> pd.DataFrame:
