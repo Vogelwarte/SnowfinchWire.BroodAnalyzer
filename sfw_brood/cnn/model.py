@@ -14,7 +14,9 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 
 	def predict(self, recording_paths: list[str], n_workers: int = 12) -> pd.DataFrame:
 		activation = 'sigmoid' if self.multi_target else 'softmax'
-		pred_result = self.cnn.predict(recording_paths, activation_layer = activation, num_workers = n_workers)
+		pred_result = self.cnn.predict(
+			recording_paths, activation_layer = activation, num_workers = n_workers, batch_size = 64
+		)
 		result_df = pred_result[0] if type(pred_result) == tuple else pred_result
 
 		if self.multi_target:

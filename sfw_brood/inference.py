@@ -46,7 +46,7 @@ class Inference:
 		recordings = []
 
 		if audio_path.is_dir():
-			for fmt in ['wav', 'flac']:
+			for fmt in ['wav', 'flac', 'WAV']:
 				for file in audio_path.rglob(f'*.{fmt}'):
 					recordings.append(file)
 		else:
@@ -95,7 +95,7 @@ class Inference:
 		for cls in classes:
 			agg_map[cls] = 'sum'
 
-		agg_cols = ['rec'] + list(agg_map.keys())
+		agg_cols = ['rec_path'] + list(agg_map.keys())
 		agg_df = pred_df[agg_cols].groupby('rec_path').agg(agg_map)
 		agg_df = agg_df.reset_index().rename(columns = { 'file': 'n_samples' })
 		agg_df['brood_id'] = agg_df['rec_path'].apply(self.__extract_brood_id__)
