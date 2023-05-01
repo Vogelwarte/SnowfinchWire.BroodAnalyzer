@@ -21,7 +21,7 @@ def main():
 	model = cnn_loader.load_model(args.model)
 
 	with Inference(model, work_dir = Path('.work')) as inference:
-		pred_result = inference.predict(path = Path(args.recording_path), n_workers = args.n_workers)
+		pred_result = inference.predict(paths = [Path(args.recording_path)], n_workers = args.n_workers)
 
 		print('\nPrediction result:')
 		print(pred_result.agg)

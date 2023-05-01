@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 
 import pandas as pd
 import soundfile as sf
@@ -36,33 +36,35 @@ class Inference:
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		cleanup(self.work_dir)
 
-	def predict(self, path: Path, n_workers: int) -> SnowfinchBroodPrediction:
-		sample_paths = self.__prepare_data__(path)
+	def predict(self, paths: List[Path], n_workers: int) -> SnowfinchBroodPrediction:
+		sample_paths = self.__prepare_data__(paths)
+		print('Running predictions for samples:', sample_paths)
 		pred_df = self.model.predict(sample_paths, n_workers = n_workers)
+		pred_df.to_csv('_inference-pred.csv')
 		pred_df, agg_df = self.__format_predictions__(pred_df)
 		return SnowfinchBroodPrediction(pred_df, agg_df)
 
-	def __prepare_data__(self, audio_path: Path) -> list[str]:
-		recordings = []
-
-		if audio_path.is_dir():
-			for fmt in ['wav', 'flac', 'WAV']:
-				for file in audio_path.rglob(f'*.{fmt}'):
-					recordings.append(file)
-		else:
-			recordings.append(audio_path)
-
+	def __prepare_data__(self, audio_paths: List[Path]) -> list[str]:
 		sample_paths = []
 
-		for rec_path in recordings:
-			recording = load_recording_data(rec_path, include_brood_info = False)
-			audio_samples = filter_recording(recording, target_labels = ['feeding'])
+		for audio_path in audio_paths:
+			recordings = []
+			if audio_path.is_dir():
+				for fmt in ['wav', 'flac', 'WAV']:
+					for file in audio_path.rglob(f'*.{fmt}'):
+						recordings.append(file)
+			else:
+				recordings.append(audio_path)
 
-			for i, (sample, _) in enumerate(audio_samples):
-				sample_prefix = rec_path.parent.relative_to(audio_path).as_posix().replace('/', '-')
-				sample_path = self.work_dir.joinpath(f'{sample_prefix}-{rec_path.stem}.{i}.wav')
-				sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
-				sample_paths.append(sample_path.as_posix())
+			for rec_path in recordings:
+				recording = load_recording_data(rec_path, include_brood_info = False)
+				audio_samples = filter_recording(recording, target_labels = ['feeding'])
+
+				for i, (sample, _) in enumerate(audio_samples):
+					sample_prefix = rec_path.parent.relative_to(audio_path.parent).as_posix().replace('/', '-')
+					sample_path = self.work_dir.joinpath(f'{sample_prefix}-{rec_path.stem}.{i}.wav')
+					sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
+					sample_paths.append(sample_path.as_posix())
 
 		return sample_paths
 
@@ -106,3 +108,10 @@ class Inference:
 		pred_df = pred_df[['file', 'start_time', 'end_time', 'predicted_class']]
 
 		return pred_df, agg_df
+
+
+class InferenceValidator:
+	def validate(self, inference: Inference, test_data: pd.DataFrame, output = '', multi_target = False) -> dict:
+		audio_paths = [Path(path) for path in test_data['rec_path']]
+		pred = inference.predict(audio_paths, n_workers = 10)
+
