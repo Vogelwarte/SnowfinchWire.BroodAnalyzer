@@ -106,7 +106,8 @@ class Inference:
 		agg_df['brood_id'] = agg_df['rec_path'].apply(self.__extract_brood_id__)
 		agg_df['datetime'] = agg_df['rec_path'].apply(self.__extract_datetime__)
 		for cls in classes:
-			agg_df[cls] /= agg_df['n_samples']
+			agg_df[f'{cls}_score'] = agg_df[cls] / agg_df['n_samples']
+			agg_df.rename(inplace = True, columns = {cls: f'{cls}_n_samples'})
 
 		pred_df = pred_df[['file', 'start_time', 'end_time', 'predicted_class']]
 
