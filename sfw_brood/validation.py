@@ -1,5 +1,6 @@
 import json
 from math import ceil
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -64,6 +65,7 @@ def generate_validation_results(
 			plt.show()
 			print(result)
 		else:
+			Path(output).mkdir(parents = True, exist_ok = True)
 			plt.savefig(f'{output}/confusion-matrix.png')
 			with open(f'{output}/test-result.json', mode = 'wt') as result_file:
 				json.dump(result, result_file, indent = 4)
