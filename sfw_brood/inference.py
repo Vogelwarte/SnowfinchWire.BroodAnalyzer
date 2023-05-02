@@ -45,7 +45,7 @@ class Inference:
 		sample_paths = self.__prepare_data__(paths)
 		print('Running predictions for samples:', sample_paths)
 		pred_df = self.model.predict(sample_paths, n_workers = n_workers)
-		pred_df.to_csv('_inference-pred.csv')
+		# pred_df.to_csv('_inference-pred.csv')
 		pred_df, agg_df = self.__format_predictions__(pred_df)
 		return SnowfinchBroodPrediction(pred_df, agg_df)
 
@@ -152,6 +152,13 @@ class InferenceValidator(ABC):
 
 		pred = inference.predict(audio_paths, n_workers)
 		pred_df = self._aggregate_predictions_(pred.agg)
+
+		if output:
+			out_path = Path(output)
+			out_path.mkdir(parents = True, exist_ok = True)
+			test_data.to_csv(out_path.joinpath('test.csv'))
+			pred_df.to_csv(out_path.joinpath('pred.csv'))
+			pred.save(out_path.joinpath('inference-pred'))
 
 		classes = self._classes_()
 		return generate_validation_results(
