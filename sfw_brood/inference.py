@@ -141,13 +141,14 @@ class InferenceValidator(ABC):
 		self.label = label
 
 	def validate_inference(
-			self, inference: Inference, test_data: pd.DataFrame, output = '', multi_target = False, n_workers = 10
+			self, inference: Inference, test_data: pd.DataFrame, data_root: Path,
+			output = '', multi_target = False, n_workers = 10
 	) -> dict:
 		test_data['datetime'] = pd.to_datetime(test_data['datetime'])
 		test_data = assign_recording_periods(test_data, period_days = self.period_days)
 		test_data = self._aggregate_test_data_(test_data)
 
-		audio_paths = [Path(path) for path in test_data['rec_path']]
+		audio_paths = [data_root.joinpath(path) for path in test_data['rec_path']]
 		pred = inference.predict(audio_paths, n_workers)
 		pred_df = self._aggregate_predictions_(pred.agg)
 
@@ -282,7 +283,8 @@ class BroodAgeInferenceValidator(InferenceValidator):
 
 if __name__ == '__main__':
 	arg_parser = argparse.ArgumentParser()
-	arg_parser.add_argument('-d', '--test-data', type = str)
+	arg_parser.add_argument('test_data', type = str)
+	arg_parser.add_argument('-d', '--data-root', type = str)
 	arg_parser.add_argument('-n', '--n-recordings', type = int)
 	arg_parser.add_argument('-m', '--model', type = str)
 	arg_parser.add_argument('-o', '--out', type = str)
@@ -307,6 +309,7 @@ if __name__ == '__main__':
 		validator.validate_inference(
 			inference,
 			test_data = pd.read_csv(args.test_data).sample(args.n_recordings),
+			data_root = Path(args.data_root),
 			output = args.out,
 			multi_target = args.target == 'age',
 			n_workers = args.n_workers
