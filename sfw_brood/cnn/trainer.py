@@ -164,11 +164,17 @@ class CNNTrainer(ModelTrainer):
 		trained_model = self.__train_cnn__(cnn, train_data, validation_data, multi_target)
 
 		if test_data is not None:
-			print(f'Testing model with output dir {out_dir}')
-			validator = CNNValidator(test_data, label, n_workers = self.n_workers)
-			test_result = validator.validate(trained_model, output = out_dir, multi_target = multi_target)
-			print(f'CNN test result: {test_result}')
+			self.__validate__(trained_model, test_data, out_dir, label, multi_target)
+		elif validation_data is not None:
+			print('Running test step with validation data')
+			self.__validate__(trained_model, validation_data, out_dir, label, multi_target)
 		else:
-			print('No test data, skipping validation')
+			print('No test nor validation data, skipping validation')
 
 		return trained_model
+
+	def __validate__(self, model: SnowfinchBroodCNN, test_data: pd.DataFrame, out: str, label: str, multi_target: bool):
+		print(f'Testing model with output dir {out}')
+		validator = CNNValidator(test_data, label, n_workers = self.n_workers)
+		test_result = validator.validate(model, output = out, multi_target = multi_target)
+		print(f'CNN test result: {test_result}')
