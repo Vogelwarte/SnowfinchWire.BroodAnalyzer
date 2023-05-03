@@ -29,7 +29,9 @@ class SnowfinchBroodPrediction:
 		self.agg.to_csv(out.joinpath('agg.csv'), index = False)
 
 
-def __extract_test_samples__(rec_path: Path, work_dir: Path) -> list[str]:
+def __extract_test_samples__(args: tuple[Path, Path]) -> list[str]:
+	rec_path, work_dir = args
+
 	try:
 		recording = load_recording_data(rec_path, include_brood_info = False)
 		audio_samples = filter_recording(recording, target_labels = ['feeding'])
