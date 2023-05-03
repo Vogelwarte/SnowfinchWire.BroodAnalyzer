@@ -1,4 +1,3 @@
-import argparse
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -9,7 +8,6 @@ import numpy as np
 import pandas as pd
 import soundfile as sf
 
-from sfw_brood.cnn.model import CNNLoader
 from sfw_brood.cnn.util import cleanup
 from sfw_brood.common.preprocessing.io import load_recording_data
 from sfw_brood.model import SnowfinchBroodClassifier
@@ -287,38 +285,3 @@ class BroodAgeInferenceValidator(InferenceValidator):
 			)
 
 		return age_pred_agg
-
-
-if __name__ == '__main__':
-	arg_parser = argparse.ArgumentParser()
-	arg_parser.add_argument('test_data', type = str)
-	arg_parser.add_argument('-d', '--data-root', type = str)
-	arg_parser.add_argument('-n', '--n-recordings', type = int)
-	arg_parser.add_argument('-m', '--model', type = str)
-	arg_parser.add_argument('-o', '--out', type = str)
-	arg_parser.add_argument('-t', '--target', type = str, choices = ['age', 'size'])
-	arg_parser.add_argument('-p', '--period-days', type = int, default = 2)
-	arg_parser.add_argument('-w', '--n-workers', type = int, default = 10)
-	args = arg_parser.parse_args()
-
-	cnn_loader = CNNLoader()
-	model = cnn_loader.load_model(args.model)
-
-	with Inference(model, work_dir = Path('.work')) as inference:
-		if args.target == 'age':
-			validator = BroodAgeInferenceValidator(
-				period_days = args.period_days,
-				age_groups = [(0, 5.5), (6, 8.5), (9, 11.5), (12, 14.5), (15, 30)],
-				multi_target_threshold = 0.5
-			)
-		else:
-			validator = BroodSizeInferenceValidator(period_days = args.period_days)
-
-		validator.validate_inference(
-			inference,
-			test_data = pd.read_csv(args.test_data).sample(args.n_recordings),
-			data_root = Path(args.data_root),
-			output = args.out,
-			multi_target = args.target == 'age',
-			n_workers = args.n_workers
-		)
