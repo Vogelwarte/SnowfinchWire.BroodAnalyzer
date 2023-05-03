@@ -24,6 +24,8 @@ if __name__ == '__main__':
 	arg_parser.add_argument('-w', '--n-workers', type = int, default = 10)
 	args = arg_parser.parse_args()
 
+	print(f'Inference test script launched with args: {args}')
+
 	cnn_loader = CNNLoader()
 	model = cnn_loader.load_model(args.model)
 	print(f'Loaded trained model: {model.model_info}')
