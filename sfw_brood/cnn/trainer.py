@@ -64,7 +64,8 @@ class CNNTrainer(ModelTrainer):
 			target_label: Optional[str] = None, remove_silence: bool = True,
 			age_groups: Optional[list[tuple[float, float]]] = None,
 			size_groups: Optional[list[tuple[float, float]]] = None,
-			samples_per_class = 'min', age_multi_target = False
+			samples_per_class = 'min', age_multi_target = False,
+			age_range: Optional[tuple[float, float]] = None
 	):
 		self.cnn_arch = cnn_arch
 		self.n_epochs = n_epochs
@@ -79,31 +80,38 @@ class CNNTrainer(ModelTrainer):
 		self.data_split = rec_split
 		self.samples_per_class = samples_per_class
 		self.age_multi_target = age_multi_target
+		self.age_range = age_range
 
-		bs_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
-		bs_data = bs_data[~bs_data['is_silence'] & (bs_data['event'].isin(self.target_labels))]
+		age_data = pd.read_csv(f'{data_path}/brood-age.csv', dtype = { 'is_silence': 'bool' })
+
+		size_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
+		size_data = size_data[~size_data['is_silence'] & (size_data['event'].isin(self.target_labels))]
+		if age_range:
+			low, high = age_range
+			age_range_files = age_data.loc[(age_data['age_min'] >= low) & (age_data['age_max'] < high), 'file']
+			size_data = size_data.set_index('file').loc[age_range_files].reset_index()
+
 		if size_groups:
-			bs_data, size_classes = group_sizes(bs_data, groups = size_groups)
+			size_data, size_classes = group_sizes(size_data, groups = size_groups)
 		else:
 			size_classes = None
 
 		self.bs_train_data, self.bs_val_data, self.bs_test_data = select_recordings(
-			bs_data, audio_path, self.samples_per_class, split_conf = rec_split['BS'], classes = size_classes
+			size_data, audio_path, self.samples_per_class, split_conf = rec_split['BS'], classes = size_classes
 		)
 		print(f'\nSize data:')
 		print(f'\ttrain: {self.bs_train_data.shape}')
 		print(f'\tvalidation: {self.bs_val_data.shape}')
 		print(f'\ttest: {self.bs_test_data.shape}')
 
-		ba_data = pd.read_csv(f'{data_path}/brood-age.csv', dtype = { 'is_silence': 'bool' })
-		ba_data = ba_data[~ba_data['is_silence'] & (ba_data['event'].isin(self.target_labels))]
+		age_data = age_data[~age_data['is_silence'] & (age_data['event'].isin(self.target_labels))]
 		if age_groups:
-			ba_data, age_classes = group_ages(ba_data, groups = age_groups, multi_target = age_multi_target)
+			age_data, age_classes = group_ages(age_data, groups = age_groups, multi_target = age_multi_target)
 		else:
 			age_classes = None
 
 		self.ba_train_data, self.ba_val_data, self.ba_test_data = select_recordings(
-			ba_data, audio_path, self.samples_per_class, split_conf = rec_split['BA'], classes = age_classes
+			age_data, audio_path, self.samples_per_class, split_conf = rec_split['BA'], classes = age_classes
 		)
 		print(f'\nAge data:')
 		print(f'\ttrain: {self.ba_train_data.shape}')
