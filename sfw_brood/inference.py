@@ -60,17 +60,22 @@ class Inference:
 				recordings.append(audio_path)
 
 			for rec_path in recordings:
-				recording = load_recording_data(rec_path, include_brood_info = False)
-				audio_samples = filter_recording(recording, target_labels = ['feeding'])
+				try:
+					recording = load_recording_data(rec_path, include_brood_info = False)
+					audio_samples = filter_recording(recording, target_labels = ['feeding'])
 
-				rec_path_rel = rec_path.relative_to(rec_path.root) if rec_path.is_absolute() else rec_path
-				work_dir = self.work_dir.joinpath(rec_path_rel.parent).joinpath(rec_path.stem)
-				work_dir.mkdir(exist_ok = True, parents = True)
+					rec_path_rel = rec_path.relative_to(rec_path.root) if rec_path.is_absolute() else rec_path
+					work_dir = self.work_dir.joinpath(rec_path_rel.parent).joinpath(rec_path.stem)
+					work_dir.mkdir(exist_ok = True, parents = True)
 
-				for i, (sample, _) in enumerate(audio_samples):
-					sample_path = work_dir.joinpath(f'{i}.wav')
-					sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
-					sample_paths.append(sample_path.as_posix())
+					for i, (sample, _) in enumerate(audio_samples):
+						sample_path = work_dir.joinpath(f'{i}.wav')
+						sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
+						sample_paths.append(sample_path.as_posix())
+
+				except FileNotFoundError:
+					print(f'Warning: failed to load recording {rec_path}')
+					continue
 
 		return sample_paths
 
