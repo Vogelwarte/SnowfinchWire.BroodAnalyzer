@@ -13,7 +13,7 @@ from sfw_brood.cnn.model import CNNLoader
 from sfw_brood.cnn.util import cleanup
 from sfw_brood.common.preprocessing.io import load_recording_data
 from sfw_brood.model import SnowfinchBroodClassifier
-from sfw_brood.preprocessing import filter_recording, group_ages
+from sfw_brood.preprocessing import filter_recording, group_ages, label_age_groups
 from sfw_brood.validation import generate_validation_results
 
 
@@ -243,28 +243,27 @@ class BroodAgeInferenceValidator(InferenceValidator):
 		super().__init__(period_days, label = 'brood age')
 		self.age_groups = age_groups
 		self.multi_target_threshold = multi_target_threshold
-		self.__classes__ = []
+		self.__classes__ = label_age_groups(age_groups)
 
 	def _classes_(self) -> list:
 		return self.__classes__
 
 	def _aggregate_test_data_(self, test_data: pd.DataFrame) -> pd.DataFrame:
-		age_test_df, age_group_labels = group_ages(
+		age_test_df, _ = group_ages(
 			test_data.rename(columns = { 'age_min': 'class_min', 'age_max': 'class_max' }),
 			groups = self.age_groups, multi_target = True
 		)
 		age_test_df = age_test_df.drop(columns = ['datetime', 'age_min', 'age_max'])
 		agg_map = { 'rec_path': 'count' }
-		for age_group in age_group_labels:
+		for age_group in self.__classes__:
 			agg_map[age_group] = 'sum'
 
 		age_test_agg = age_test_df.groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
 		age_test_agg = age_test_agg.rename(columns = { 'rec_path': 'rec_count' })
 
-		for age_group in age_group_labels:
+		for age_group in self.__classes__:
 			age_test_agg[age_group] = np.where(age_test_agg[age_group] / age_test_agg['rec_count'] > 0.3, 1, 0)
 
-		self.__classes__ = age_group_labels
 		return age_test_agg
 
 	def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
