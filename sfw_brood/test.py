@@ -26,6 +26,7 @@ if __name__ == '__main__':
 
 	cnn_loader = CNNLoader()
 	model = cnn_loader.load_model(args.model)
+	print(f'Loaded trained model: {model.model_info}')
 
 	with open(args.data_config) as data_conf_file:
 		data_config = json.load(data_conf_file)
@@ -44,6 +45,7 @@ if __name__ == '__main__':
 
 		test_data = pd.read_csv(args.test_data)
 		test_data = test_data[test_data[data_config['selector']].isin(data_config['test'])]
+		print(f'Running inference tests for broods {data_config["test"]}')
 
 		validator.validate_inference(
 			inference, test_data,
