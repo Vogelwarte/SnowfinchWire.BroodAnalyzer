@@ -46,23 +46,23 @@ on:
           - age
           - all
         default: all
-      age_groups:
-        description: Wide classes for brood age
-        required: false
-        type: choice
-        options:
-          - 0-5.5,6-8.5,9-11.5,12-14.5,15-30
-          - 0-4.5,5-6.5,7-8.5,9-10.5,11-12.5,13-14.5,15-16.5,17-30
-          - none
-        default: 0-5.5,6-8.5,9-11.5,12-14.5,15-30
-      size_groups:
-        description: Wide classes for brood size
-        required: false
-        type: choice
-        options:
-          - 0-3,4-6
-          - none
-        default: 0-5.5,6-8.5,9-11.5,12-14.5,15-30
+#      age_groups:
+#        description: Wide classes for brood age
+#        required: false
+#        type: choice
+#        options:
+#          - 0-5.5,6-8.5,9-11.5,12-14.5,15-30
+#          - 0-4.5,5-6.5,7-8.5,9-10.5,11-12.5,13-14.5,15-16.5,17-30
+#          - none
+#        default: 0-5.5,6-8.5,9-11.5,12-14.5,15-30
+#      size_groups:
+#        description: Wide classes for brood size
+#        required: false
+#        type: choice
+#        options:
+#          - 0-3,4-6
+#          - none
+#        default: 0-5.5,6-8.5,9-11.5,12-14.5,15-30
       samples_per_class:
         description: Target count of samples per class
         required: true
@@ -92,6 +92,17 @@ on:
           - single
           - multi
         default: single
+      age_range:
+        description: Age range in which size classification is to be performed
+        required: false
+        type: choice
+        options:
+          - 0-5
+          - 5-10
+          - 10-15
+          - 15-30
+          - none
+        default: none
 
 permissions:
   contents: read
@@ -138,10 +149,11 @@ jobs:
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
           -d ${{ github.event.inputs.sample_duration }} -t ${{ github.event.inputs.target }} \
           -e feeding -c config/data-split-server.json -w 12 \
-          --group-ages ${{ github.event.inputs.age_groups }} \
-          --group-sizes ${{ github.event.inputs.size_groups }} \
+#          --group-ages ${{ github.event.inputs.age_groups }} \
+#          --group-sizes ${{ github.event.inputs.size_groups }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
           --age-mode ${{ github.event.inputs.age_mode }} \
+          --age-range ${{ github.event.inputs.age_range }} \
           "$WORK_DIR/out/s${{ github.event.inputs.sample_duration }}.0-o1.0" \
           "$WORK_DIR/s${{ github.event.inputs.sample_duration }}-o1/s${{ github.event.inputs.sample_duration }}.0-o1.0"
       - name: Store results

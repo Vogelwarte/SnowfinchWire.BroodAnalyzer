@@ -21,8 +21,8 @@ class CNNTrainer(ModelTrainer):
 			sample_duration_sec: float, rec_split: dict,
 			cnn_arch: str, n_epochs: int, n_workers = 12, batch_size = 100, learn_rate = 0.001,
 			target_label: Optional[str] = None, remove_silence: bool = True,
-			age_groups: Optional[list[tuple[float, float]]] = None,
-			size_groups: Optional[list[tuple[float, float]]] = None,
+			# age_groups: Optional[list[tuple[float, float]]] = None,
+			# size_groups: Optional[list[tuple[float, float]]] = None,
 			samples_per_class = 'min', age_multi_target = False,
 			age_range: Optional[tuple[float, float]] = None
 	):
@@ -50,8 +50,8 @@ class CNNTrainer(ModelTrainer):
 			size_data = size_data.set_index('file').loc[age_range_files].reset_index()
 
 		size_data = size_data[~size_data['is_silence'] & (size_data['event'].isin(self.target_labels))]
-		if size_groups:
-			size_data, size_classes = group_sizes(size_data, groups = size_groups)
+		if 'groups' in rec_split['BS']:
+			size_data, size_classes = group_sizes(size_data, groups = rec_split['BS']['groups'])
 		else:
 			size_classes = None
 
@@ -64,8 +64,10 @@ class CNNTrainer(ModelTrainer):
 		print(f'\ttest: {self.bs_test_data.shape}')
 
 		age_data = age_data[~age_data['is_silence'] & (age_data['event'].isin(self.target_labels))]
-		if age_groups:
-			age_data, age_classes = group_ages(age_data, groups = age_groups, multi_target = age_multi_target)
+		if 'groups' in rec_split['BA']:
+			age_data, age_classes = group_ages(
+				age_data, groups = rec_split['BA']['groups'], multi_target = age_multi_target
+			)
 		else:
 			age_classes = None
 

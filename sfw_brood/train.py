@@ -16,20 +16,20 @@ def make_time_str() -> str:
 	return datetime.now().isoformat()[:19].replace(':', '-')
 
 
-def parse_cls_groups(cls_groups: str) -> Optional[list[tuple[float, float]]]:
-	if cls_groups == 'none':
-		return None
-
-	out_groups = []
-
-	for cls_group in cls_groups.split(','):
-		try:
-			out_groups.append(parse_range_str(cls_group, throw_error = True))
-		except Exception as parse_error:
-			print(f'Invalid age groups: {parse_error}')
-			exit(1)
-
-	return out_groups
+# def parse_cls_groups(cls_groups: str) -> Optional[list[tuple[float, float]]]:
+# 	if cls_groups == 'none':
+# 		return None
+#
+# 	out_groups = []
+#
+# 	for cls_group in cls_groups.split(','):
+# 		try:
+# 			out_groups.append(parse_range_str(cls_group, throw_error = True))
+# 		except Exception as parse_error:
+# 			print(f'Invalid age groups: {parse_error}')
+# 			exit(1)
+#
+# 	return out_groups
 
 
 def parse_range_str(range_str: str, throw_error = False) -> Optional[tuple[float, float]]:
@@ -60,8 +60,8 @@ if __name__ == '__main__':
 	arg_parser.add_argument('-e', '--event', type = str, choices = ['feeding', 'contact', 'all'], default = 'all')
 	arg_parser.add_argument('-t', '--target', type = str, choices = ['size', 'age', 'all'], default = 'all')
 	arg_parser.add_argument('-c', '--split-config-path', type = str)
-	arg_parser.add_argument('--group-ages', type = str, default = 'none')
-	arg_parser.add_argument('--group-sizes', type = str, default = 'none')
+	# arg_parser.add_argument('--group-ages', type = str, default = 'none')
+	# arg_parser.add_argument('--group-sizes', type = str, default = 'none')
 	arg_parser.add_argument('--age-mode', type = str, choices = ['single', 'multi'], default = 'single')
 	arg_parser.add_argument('--samples-per-class', type = str, default = 'min')
 	arg_parser.add_argument('--age-range', type = str, default = 'none')
@@ -82,8 +82,8 @@ if __name__ == '__main__':
 		batch_size = args.batch_size,
 		learn_rate = args.learning_rate,
 		target_label = None if args.event == 'all' else args.event,
-		age_groups = parse_cls_groups(args.group_ages),
-		size_groups = parse_cls_groups(args.group_sizes),
+		# age_groups = parse_cls_groups(args.group_ages),
+		# size_groups = parse_cls_groups(args.group_sizes),
 		samples_per_class = args.samples_per_class,
 		age_multi_target = args.age_mode == 'multi',
 		age_range = parse_range_str(args.age_range)
