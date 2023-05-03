@@ -12,9 +12,6 @@ from .util import cleanup
 from .validator import CNNValidator
 
 
-
-
-
 class CNNTrainer(ModelTrainer):
 	def __init__(
 			self, data_path: str, audio_path: str, work_dir: str,
@@ -84,7 +81,8 @@ class CNNTrainer(ModelTrainer):
 		return self
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
-		cleanup(self.work_dir)
+		# cleanup(self.work_dir)
+		pass
 
 	def train_model_for_size(self, out_dir: str):
 		return self.__do_training__(
