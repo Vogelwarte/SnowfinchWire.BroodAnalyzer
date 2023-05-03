@@ -1,11 +1,11 @@
 .idea
 
-venv
+*venv*
 __pycache__
 
 _data*
 _training
 _testing
 _out
-
+.work
 **/nemo_experiments

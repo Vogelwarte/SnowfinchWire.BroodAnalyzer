@@ -8,6 +8,7 @@ import pandas as pd
 import soundfile as sf
 
 from sklearn.preprocessing import OneHotEncoder
+from opensoundscape.data_selection import resample
 from tqdm import tqdm
 
 from .common.preprocessing.io import SnowfinchNestRecording, load_recording_data, validate_recording_data
@@ -17,8 +18,8 @@ from .common.preprocessing.io import number_from_recording_name
 @dataclass
 class SnowfinchDataset:
 	data_root: Path
-	files: List[Path]
-	brood_sizes: List[int]
+	files: list[Path]
+	brood_sizes: list[int]
 
 
 @dataclass
@@ -71,8 +72,8 @@ def __to_dbfs__(audio: np.ndarray) -> np.ndarray:
 
 
 def prepare_training_data(
-		recording: SnowfinchNestRecording, brood_sizes: List[int], config: PreprocessorConfig
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+		recording: SnowfinchNestRecording, brood_sizes: list[int], config: PreprocessorConfig
+) -> tuple[pd.DataFrame, pd.DataFrame]:
 	slices_dir = Path(config.work_dir)
 	slices_dir.mkdir(exist_ok = True, parents = True)
 
@@ -112,8 +113,8 @@ def prepare_training_data(
 
 
 def __process_recording__(
-		rec_data: Tuple[Path, Optional[pd.Series], List[int], PreprocessorConfig], verbose = False
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+		rec_data: tuple[Path, Optional[pd.Series], list[int], PreprocessorConfig], verbose = False
+) -> tuple[pd.DataFrame, pd.DataFrame]:
 	rec_path, rec_info, brood_sizes, config = rec_data
 	rec_title = rec_path.stem
 
@@ -144,7 +145,7 @@ def __process_recording__(
 def prepare_training(
 		dataset: SnowfinchDataset, work_dir: Union[str, Path], slice_duration_sec: float,
 		overlap_sec: float = 0.0, rec_df: Optional[pd.DataFrame] = None, n_workers = 1
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
 	bs_train_df = pd.DataFrame()
 	ba_train_df = pd.DataFrame()
 
@@ -167,7 +168,20 @@ def prepare_training(
 	return bs_train_df, ba_train_df
 
 
-def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overlap_sec = 0.0) -> List[np.ndarray]:
+def balance_data(data: pd.DataFrame, classes: list[str], samples_per_class: str) -> pd.DataFrame:
+	class_samples = [np.count_nonzero(data[cls]) for cls in classes]
+
+	if samples_per_class == 'min':
+		return resample(data, n_samples_per_class = np.min(class_samples))
+	elif samples_per_class == 'max':
+		return resample(data, n_samples_per_class = np.max(class_samples))
+	elif samples_per_class == 'mean':
+		return resample(data, n_samples_per_class = round(np.mean(class_samples)))
+	else:
+		return resample(data, n_samples_per_class = int(samples_per_class))
+
+
+def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overlap_sec = 0.0) -> list[np.ndarray]:
 	samples_per_slice = round(slice_len_sec * sample_rate)
 	overlap_samples = round(overlap_sec * sample_rate)
 
@@ -183,7 +197,7 @@ def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overl
 	return slices
 
 
-def __map_class_to_group__(cls: float, groups: List[Tuple[float, float]], group_labels: List[str]) -> str:
+def __map_class_to_group__(cls: float, groups: list[tuple[float, float]], group_labels: list[str]) -> str:
 	for (low, high), label in zip(groups, group_labels):
 		if low <= cls <= high:
 			return label
@@ -210,7 +224,7 @@ def __groups_to_1hot__(groups_df: pd.DataFrame) -> pd.DataFrame:
 	return groups_df
 
 
-def group_sizes(size_df: pd.DataFrame, groups: List[Tuple[float, float]]) -> Tuple[pd.DataFrame, List[str]]:
+def group_sizes(size_df: pd.DataFrame, groups: list[tuple[float, float]]) -> tuple[pd.DataFrame, list[str]]:
 	group_labels = ['{:02}-{:02}'.format(low, high) for low, high in groups]
 
 	def map_size(size: float) -> str:
@@ -222,10 +236,14 @@ def group_sizes(size_df: pd.DataFrame, groups: List[Tuple[float, float]]) -> Tup
 	return __groups_to_1hot__(size_group_df), group_labels
 
 
+def label_age_groups(groups: list[tuple[float, float]]) -> list[str]:
+	return ['{:04.1f}-{:04.1f}'.format(low, high) for low, high in groups]
+
+
 def group_ages(
 		age_df: pd.DataFrame, groups: List[Tuple[float, float]], multi_target = False
 ) -> Tuple[pd.DataFrame, List[str]]:
-	group_labels = ['{:04.1f}-{:04.1f}'.format(low, high) for low, high in groups]
+	group_labels = label_age_groups(groups)
 	age_group_df = age_df.rename(columns = {
 		'class_min': 'age_min',
 		'class_max': 'age_max'
@@ -258,8 +276,8 @@ def group_ages(
 
 
 def __make_training_frame__(
-		files: List[str], labels: List[str], is_silence: List[bool],
-		match: Union[int, float, str, Tuple[float, float]], classes: Optional[list] = None
+		files: list[str], labels: list[str], is_silence: list[bool],
+		match: Union[int, float, str, tuple[float, float]], classes: Optional[list] = None
 ) -> pd.DataFrame:
 	data = {
 		'file': files,
@@ -306,7 +324,7 @@ def discover_training_data(data_dir: str, rec_df: Optional[pd.DataFrame] = None)
 	return SnowfinchDataset(data_path, list(file_paths), list(brood_sizes))
 
 
-def filter_recording(recording: SnowfinchNestRecording, target_labels: List[str]) -> List[Tuple[np.ndarray, str]]:
+def filter_recording(recording: SnowfinchNestRecording, target_labels: list[str]) -> list[tuple[np.ndarray, str]]:
 	if not len(recording.labels):
 		return []
 
