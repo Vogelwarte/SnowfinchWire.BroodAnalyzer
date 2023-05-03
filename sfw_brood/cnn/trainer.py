@@ -83,14 +83,14 @@ class CNNTrainer(ModelTrainer):
 		self.age_range = age_range
 
 		age_data = pd.read_csv(f'{data_path}/brood-age.csv', dtype = { 'is_silence': 'bool' })
-
 		size_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
-		size_data = size_data[~size_data['is_silence'] & (size_data['event'].isin(self.target_labels))]
+
 		if age_range:
 			low, high = age_range
-			age_range_files = age_data.loc[(age_data['age_min'] >= low) & (age_data['age_max'] < high), 'file']
+			age_range_files = age_data.loc[(age_data['class_min'] >= low) & (age_data['class_max'] < high), 'file']
 			size_data = size_data.set_index('file').loc[age_range_files].reset_index()
 
+		size_data = size_data[~size_data['is_silence'] & (size_data['event'].isin(self.target_labels))]
 		if size_groups:
 			size_data, size_classes = group_sizes(size_data, groups = size_groups)
 		else:

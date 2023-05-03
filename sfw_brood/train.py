@@ -24,13 +24,27 @@ def parse_cls_groups(cls_groups: str) -> Optional[list[tuple[float, float]]]:
 
 	for cls_group in cls_groups.split(','):
 		try:
-			cls_range = cls_group.split('-')
-			out_groups.append((float(cls_range[0]), float(cls_range[1])))
+			out_groups.append(parse_range_str(cls_group, throw_error = True))
 		except Exception as parse_error:
 			print(f'Invalid age groups: {parse_error}')
 			exit(1)
 
 	return out_groups
+
+
+def parse_range_str(range_str: str, throw_error = False) -> Optional[tuple[float, float]]:
+	if range_str == 'none':
+		return None
+
+	try:
+		low, high = range_str.split('-')
+		return float(low), float(high)
+	except ValueError as error:
+		if throw_error:
+			raise error
+		else:
+			print('Warning: invalid range format, ignoring range argument')
+			return None
 
 
 if __name__ == '__main__':
@@ -50,6 +64,7 @@ if __name__ == '__main__':
 	arg_parser.add_argument('--group-sizes', type = str, default = 'none')
 	arg_parser.add_argument('--age-mode', type = str, choices = ['single', 'multi'], default = 'single')
 	arg_parser.add_argument('--samples-per-class', type = str, default = 'min')
+	arg_parser.add_argument('--age-range', type = str, default = 'none')
 	args = arg_parser.parse_args()
 
 	with open(args.split_config_path, mode = 'rt') as split_file:
@@ -70,7 +85,8 @@ if __name__ == '__main__':
 		age_groups = parse_cls_groups(args.group_ages),
 		size_groups = parse_cls_groups(args.group_sizes),
 		samples_per_class = args.samples_per_class,
-		age_multi_target = args.age_mode == 'multi'
+		age_multi_target = args.age_mode == 'multi',
+		age_range = parse_range_str(args.age_range)
 	)
 
 	with trainer:
