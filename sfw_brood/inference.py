@@ -91,7 +91,7 @@ class Inference:
 
 		with multiprocessing.Pool(n_workers) as proc_pool:
 			for samples in tqdm(proc_pool.imap_unordered(__extract_test_samples__, rec_data), total = len(rec_data)):
-				sample_paths.append(samples)
+				sample_paths.extend(samples)
 
 			# for rec_path in recordings:
 			# 	try:
