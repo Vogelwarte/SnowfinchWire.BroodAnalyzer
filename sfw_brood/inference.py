@@ -146,12 +146,13 @@ class InferenceValidator(ABC):
 	) -> dict:
 		audio_paths = [data_root.joinpath(path) for path in test_data['rec_path']]
 
+		pred = inference.predict(audio_paths, n_workers)
+		pred_df = self._aggregate_predictions_(pred.agg).set_index(['brood_id', 'period_start'])
+
 		test_data['datetime'] = pd.to_datetime(test_data['datetime'])
 		test_data = assign_recording_periods(test_data, period_days = self.period_days)
 		test_data = self._aggregate_test_data_(test_data)
-
-		pred = inference.predict(audio_paths, n_workers)
-		pred_df = self._aggregate_predictions_(pred.agg)
+		test_data = test_data.set_index(['brood_id', 'period_start']).loc[pred_df.index]
 
 		if output:
 			out_path = Path(output)
