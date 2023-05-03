@@ -41,7 +41,7 @@ class Inference:
 
 	def predict(self, paths: List[Path], n_workers: int) -> SnowfinchBroodPrediction:
 		sample_paths = self.__prepare_data__(paths)
-		print('Running predictions for samples:', sample_paths)
+		print(f'Running predictions for {len(sample_paths)} samples')
 		pred_df = self.model.predict(sample_paths, n_workers = n_workers)
 		pred_df.to_csv('_inference-pred.csv')
 		pred_df, agg_df = self.__format_predictions__(pred_df)
@@ -53,12 +53,14 @@ class Inference:
 		for audio_path in audio_paths:
 			recordings = []
 			if audio_path.is_dir():
+				print(f'Inference: discovering recordings from {audio_path.as_posix()} directory')
 				for fmt in ['wav', 'flac', 'WAV']:
 					for file in audio_path.rglob(f'*.{fmt}'):
 						recordings.append(file)
 			else:
 				recordings.append(audio_path)
 
+			print(f'Inference: extracting audio samples from {len(recordings)} recordings')
 			for rec_path in recordings:
 				try:
 					recording = load_recording_data(rec_path, include_brood_info = False)
