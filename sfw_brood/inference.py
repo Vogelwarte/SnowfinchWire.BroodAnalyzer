@@ -29,6 +29,28 @@ class SnowfinchBroodPrediction:
 		self.agg.to_csv(out.joinpath('agg.csv'), index = False)
 
 
+def __extract_test_samples__(rec_path: Path, work_dir: Path) -> list[str]:
+	try:
+		recording = load_recording_data(rec_path, include_brood_info = False)
+		audio_samples = filter_recording(recording, target_labels = ['feeding'])
+
+		rec_path_rel = rec_path.relative_to(rec_path.root) if rec_path.is_absolute() else rec_path
+		work_dir = work_dir.joinpath(rec_path_rel.parent).joinpath(rec_path.stem)
+		work_dir.mkdir(exist_ok = True, parents = True)
+
+		sample_paths = []
+		for i, (sample, _) in enumerate(audio_samples):
+			sample_path = work_dir.joinpath(f'{i}.wav')
+			sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
+			sample_paths.append(sample_path.as_posix())
+
+		return sample_paths
+
+	except FileNotFoundError:
+		print(f'Warning: failed to load recording {rec_path}')
+		return []
+
+
 class Inference:
 	def __init__(self, model: SnowfinchBroodClassifier, work_dir: Path):
 		self.model = model
@@ -62,10 +84,11 @@ class Inference:
 				rec_paths.append(audio_path)
 
 		print(f'Inference: extracting audio samples from {len(rec_paths)} recordings')
-
+		rec_data = [(rec_path, self.work_dir) for rec_path in rec_paths]
 		sample_paths = []
+
 		with multiprocessing.Pool(n_workers) as proc_pool:
-			for samples in tqdm(proc_pool.imap_unordered(self.__extract_samples__, rec_paths), total = len(rec_paths)):
+			for samples in tqdm(proc_pool.imap_unordered(__extract_test_samples__, rec_data), total = len(rec_data)):
 				sample_paths.append(samples)
 
 			# for rec_path in recordings:
@@ -87,27 +110,6 @@ class Inference:
 			# 		continue
 
 		return sample_paths
-
-	def __extract_samples__(self, rec_path: Path) -> list[str]:
-		try:
-			recording = load_recording_data(rec_path, include_brood_info = False)
-			audio_samples = filter_recording(recording, target_labels = ['feeding'])
-
-			rec_path_rel = rec_path.relative_to(rec_path.root) if rec_path.is_absolute() else rec_path
-			work_dir = self.work_dir.joinpath(rec_path_rel.parent).joinpath(rec_path.stem)
-			work_dir.mkdir(exist_ok = True, parents = True)
-
-			sample_paths = []
-			for i, (sample, _) in enumerate(audio_samples):
-				sample_path = work_dir.joinpath(f'{i}.wav')
-				sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
-				sample_paths.append(sample_path.as_posix())
-
-			return sample_paths
-
-		except FileNotFoundError:
-			print(f'Warning: failed to load recording {rec_path}')
-			return []
 
 	def __extract_rec_path__(self, sample_path: str) -> str:
 		sample_path = Path(sample_path)
