@@ -149,8 +149,6 @@ jobs:
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
           -d ${{ github.event.inputs.sample_duration }} -t ${{ github.event.inputs.target }} \
           -e feeding -c config/data-split-server.json -w 12 \
-#          --group-ages ${{ github.event.inputs.age_groups }} \
-#          --group-sizes ${{ github.event.inputs.size_groups }} \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
           --age-mode ${{ github.event.inputs.age_mode }} \
           --age-range ${{ github.event.inputs.age_range }} \
