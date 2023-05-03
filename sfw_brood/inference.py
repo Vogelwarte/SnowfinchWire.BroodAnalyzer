@@ -85,34 +85,34 @@ class Inference:
 			else:
 				rec_paths.append(audio_path)
 
-		# print(f'Inference: extracting audio samples from {len(rec_paths)} recordings')
-		# rec_data = [(rec_path, self.work_dir) for rec_path in rec_paths]
-		# sample_paths = []
+		print(f'Inference: extracting audio samples from {len(rec_paths)} recordings')
+		rec_data = [(rec_path, self.work_dir) for rec_path in rec_paths]
+		sample_paths = []
+
+		with multiprocessing.Pool(n_workers) as proc_pool:
+			for samples in tqdm(proc_pool.imap_unordered(__extract_test_samples__, rec_data), total = len(rec_data)):
+				sample_paths.extend(samples)
+
+		# for rec_path in recordings:
+		# 	try:
+		# 		recording = load_recording_data(rec_path, include_brood_info = False)
+		# 		audio_samples = filter_recording(recording, target_labels = ['feeding'])
 		#
-		# with multiprocessing.Pool(n_workers) as proc_pool:
-		# 	for samples in tqdm(proc_pool.imap_unordered(__extract_test_samples__, rec_data), total = len(rec_data)):
-		# 		sample_paths.extend(samples)
+		# 		rec_path_rel = rec_path.relative_to(rec_path.root) if rec_path.is_absolute() else rec_path
+		# 		work_dir = self.work_dir.joinpath(rec_path_rel.parent).joinpath(rec_path.stem)
+		# 		work_dir.mkdir(exist_ok = True, parents = True)
+		#
+		# 		for i, (sample, _) in enumerate(audio_samples):
+		# 			sample_path = work_dir.joinpath(f'{i}.wav')
+		# 			sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
+		# 			sample_paths.append(sample_path.as_posix())
+		#
+		# 	except FileNotFoundError:
+		# 		print(f'Warning: failed to load recording {rec_path}')
+		# 		continue
 
-			# for rec_path in recordings:
-			# 	try:
-			# 		recording = load_recording_data(rec_path, include_brood_info = False)
-			# 		audio_samples = filter_recording(recording, target_labels = ['feeding'])
-			#
-			# 		rec_path_rel = rec_path.relative_to(rec_path.root) if rec_path.is_absolute() else rec_path
-			# 		work_dir = self.work_dir.joinpath(rec_path_rel.parent).joinpath(rec_path.stem)
-			# 		work_dir.mkdir(exist_ok = True, parents = True)
-			#
-			# 		for i, (sample, _) in enumerate(audio_samples):
-			# 			sample_path = work_dir.joinpath(f'{i}.wav')
-			# 			sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
-			# 			sample_paths.append(sample_path.as_posix())
-			#
-			# 	except FileNotFoundError:
-			# 		print(f'Warning: failed to load recording {rec_path}')
-			# 		continue
-
-		# return sample_paths
-		return [rec_path.as_posix() for rec_path in rec_paths]
+		# return [rec_path.as_posix() for rec_path in rec_paths]
+		return sample_paths
 
 	def __extract_rec_path__(self, sample_path: str) -> str:
 		sample_path = Path(sample_path)
@@ -165,7 +165,7 @@ def assign_recording_periods(
 		return min_date + timedelta(days = period_days * period_offset)
 
 	period_df = pd.DataFrame()
-	period_map_out = {}
+	period_map_out = { }
 
 	for brood in rec_df['brood_id'].unique():
 		brood_df = rec_df[rec_df['brood_id'] == brood]
