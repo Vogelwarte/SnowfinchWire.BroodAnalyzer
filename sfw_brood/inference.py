@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union, List
+from typing import Union, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -43,7 +43,7 @@ class Inference:
 		sample_paths = self.__prepare_data__(paths)
 		print('Running predictions for samples:', sample_paths)
 		pred_df = self.model.predict(sample_paths, n_workers = n_workers)
-		# pred_df.to_csv('_inference-pred.csv')
+		pred_df.to_csv('_inference-pred.csv')
 		pred_df, agg_df = self.__format_predictions__(pred_df)
 		return SnowfinchBroodPrediction(pred_df, agg_df)
 
@@ -122,20 +122,29 @@ class Inference:
 		return pred_df, agg_df
 
 
-def assign_recording_periods(rec_df: pd.DataFrame, period_days: int) -> pd.DataFrame:
+def assign_recording_periods(
+		rec_df: pd.DataFrame, period_days: int, period_map: Optional[dict] = None
+) -> tuple[pd.DataFrame, dict]:
 	def calculate_period_start(rec_time, min_date):
 		period_offset = (rec_time.date() - min_date).days // period_days
 		return min_date + timedelta(days = period_days * period_offset)
 
 	period_df = pd.DataFrame()
+	period_map_out = {}
 
 	for brood in rec_df['brood_id'].unique():
 		brood_df = rec_df[rec_df['brood_id'] == brood]
-		brood_min_date = brood_df['datetime'].min().date()
-		brood_df['period_start'] = brood_df['datetime'].apply(lambda dt: calculate_period_start(dt, brood_min_date))
+
+		if period_map and brood in period_map.keys():
+			period_start = period_map[brood]
+		else:
+			period_start = brood_df['datetime'].min().date()
+
+		period_map_out[brood] = period_start
+		brood_df['period_start'] = brood_df['datetime'].apply(lambda dt: calculate_period_start(dt, period_start))
 		period_df = pd.concat([period_df, brood_df])
 
-	return period_df
+	return period_df, period_map_out
 
 
 class InferenceValidator(ABC):
@@ -149,13 +158,14 @@ class InferenceValidator(ABC):
 	) -> dict:
 		audio_paths = [data_root.joinpath(path) for path in test_data['rec_path']]
 
-		pred = inference.predict(audio_paths, n_workers)
-		pred_df = self._aggregate_predictions_(pred.agg).set_index(['brood_id', 'period_start'])
-
 		test_data['datetime'] = pd.to_datetime(test_data['datetime'])
-		test_data = assign_recording_periods(test_data, period_days = self.period_days)
+		test_data, period_map = assign_recording_periods(test_data, period_days = self.period_days)
 		test_data = self._aggregate_test_data_(test_data)
-		test_data = test_data.set_index(['brood_id', 'period_start']).loc[pred_df.index]
+
+		pred = inference.predict(audio_paths, n_workers)
+		pred.agg['datetime'] = pd.to_datetime(pred.agg['datetime'])
+		pred_df, _ = assign_recording_periods(pred.agg, period_days = self.period_days, period_map = period_map)
+		pred_df = self._aggregate_predictions_(pred_df).set_index(['brood_id', 'period_start'])
 
 		if output:
 			out_path = Path(output)
@@ -166,7 +176,7 @@ class InferenceValidator(ABC):
 
 		classes = self._classes_()
 		return generate_validation_results(
-			test_df = test_data[classes],
+			test_df = test_data.set_index(['brood_id', 'period_start']).loc[pred_df.index, classes],
 			pred_df = pred_df[classes],
 			classes = classes,
 			target_label = self.label,
@@ -217,28 +227,26 @@ class BroodSizeInferenceValidator(InferenceValidator):
 		return size_test_agg
 
 	def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
-		pred_df['datetime'] = pd.to_datetime(pred_df['datetime'])
-		size_pred_df = assign_recording_periods(pred_df, period_days = 2)
 		agg_map = { 'rec_path': 'count' }
 		test_cols = ['rec_path', 'brood_id', 'period_start']
 
-		for col in size_pred_df.columns:
+		for col in pred_df.columns:
 			if 'n_samples' in col:
 				test_cols.append(col)
 				agg_map[col] = 'sum'
 
-		size_pred_agg = size_pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
-		size_pred_agg = size_pred_agg.rename(columns = { 'rec_path': 'rec_count' })
+		pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
+		pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
 
 		classes = self._classes_()
 		for bs in classes:
-			size_pred_agg[bs] = size_pred_df[f'{bs}_n_samples'] / size_pred_df['n_samples']
+			pred_agg_df[bs] = pred_df[f'{bs}_n_samples'] / pred_df['n_samples']
 
 		for bs in classes:
-			bs_max = size_pred_agg[classes].idxmax(axis = 1)
-			size_pred_agg[bs] = np.where(bs_max == bs, 1, 0)
+			bs_max = pred_agg_df[classes].idxmax(axis = 1)
+			pred_agg_df[bs] = np.where(bs_max == bs, 1, 0)
 
-		return size_pred_agg
+		return pred_agg_df
 
 
 class BroodAgeInferenceValidator(InferenceValidator):
@@ -270,23 +278,20 @@ class BroodAgeInferenceValidator(InferenceValidator):
 		return age_test_agg
 
 	def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
-		pred_df['datetime'] = pd.to_datetime(pred_df['datetime'])
-		age_pred_df = assign_recording_periods(pred_df, period_days = 2)
-
 		agg_map = { 'rec_path': 'count' }
 		test_cols = ['rec_path', 'brood_id', 'period_start']
 
-		for col in age_pred_df.columns:
+		for col in pred_df.columns:
 			if 'n_samples' in col:
 				test_cols.append(col)
 				agg_map[col] = 'sum'
 
-		age_pred_agg = age_pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
-		age_pred_agg = age_pred_agg.rename(columns = { 'rec_path': 'rec_count' })
+		pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
+		pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
 
 		for age_group in self._classes_():
-			age_pred_agg[age_group] = np.where(
-				age_pred_agg[f'{age_group}_n_samples'] / age_pred_agg['n_samples'] > self.multi_target_threshold, 1, 0
+			pred_agg_df[age_group] = np.where(
+				pred_agg_df[f'{age_group}_n_samples'] / pred_agg_df['n_samples'] > self.multi_target_threshold, 1, 0
 			)
 
-		return age_pred_agg
+		return pred_agg_df
