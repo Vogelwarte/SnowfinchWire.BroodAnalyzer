@@ -145,7 +145,8 @@ jobs:
       - name: Run training
         run: |
           python -m sfw_brood.train \
-          -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} -d 2.0 \
+          -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} \
+          -d ${{ github.event.inputs.sample_duration }} \
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
           -d ${{ github.event.inputs.sample_duration }} -t ${{ github.event.inputs.target }} \
           -e feeding -c config/data-split-server.json -w 12 \
