@@ -85,13 +85,13 @@ class Inference:
 			else:
 				rec_paths.append(audio_path)
 
-		print(f'Inference: extracting audio samples from {len(rec_paths)} recordings')
-		rec_data = [(rec_path, self.work_dir) for rec_path in rec_paths]
-		sample_paths = []
-
-		with multiprocessing.Pool(n_workers) as proc_pool:
-			for samples in tqdm(proc_pool.imap_unordered(__extract_test_samples__, rec_data), total = len(rec_data)):
-				sample_paths.extend(samples)
+		# print(f'Inference: extracting audio samples from {len(rec_paths)} recordings')
+		# rec_data = [(rec_path, self.work_dir) for rec_path in rec_paths]
+		# sample_paths = []
+		#
+		# with multiprocessing.Pool(n_workers) as proc_pool:
+		# 	for samples in tqdm(proc_pool.imap_unordered(__extract_test_samples__, rec_data), total = len(rec_data)):
+		# 		sample_paths.extend(samples)
 
 			# for rec_path in recordings:
 			# 	try:
@@ -111,7 +111,8 @@ class Inference:
 			# 		print(f'Warning: failed to load recording {rec_path}')
 			# 		continue
 
-		return sample_paths
+		# return sample_paths
+		return [rec_path.as_posix() for rec_path in rec_paths]
 
 	def __extract_rec_path__(self, sample_path: str) -> str:
 		sample_path = Path(sample_path)
