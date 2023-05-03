@@ -1,11 +1,16 @@
 import argparse
 import json
+import warnings
 from pathlib import Path
 
 import pandas as pd
+from pandas.errors import SettingWithCopyWarning
 
 from sfw_brood.cnn.model import CNNLoader
 from sfw_brood.inference import Inference, BroodAgeInferenceValidator, BroodSizeInferenceValidator
+
+warnings.simplefilter(action = 'ignore', category = FutureWarning)
+warnings.simplefilter(action = 'ignore', category = SettingWithCopyWarning)
 
 if __name__ == '__main__':
 	arg_parser = argparse.ArgumentParser()
