@@ -68,13 +68,14 @@ on:
         required: true
         type: string
         default: 10_000
-#      data_split_config:
-#        description: Data split configuration file
-#        required: true
-#        type: choice
-#        options:
-#          - data-split-server.json
-#        default: data-split-server.json
+      data_config:
+        description: Data configuration file
+        required: true
+        type: choice
+        options:
+          - data-split-server.json
+          - data-no-test.json
+        default: data-split-server.json
       sample_duration:
         description: Duration of train/test sound sample
         required: true
@@ -148,7 +149,7 @@ jobs:
           -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} \
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
           -d ${{ github.event.inputs.sample_duration }} -t ${{ github.event.inputs.target }} \
-          -e feeding -c config/data-split-server.json -w 12 \
+          -e feeding -c config/${{ github.event.inputs.data_config }} -w 12 \
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
           --age-mode ${{ github.event.inputs.age_mode }} \
           --age-range ${{ github.event.inputs.age_range }} \

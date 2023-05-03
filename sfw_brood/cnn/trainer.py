@@ -57,8 +57,8 @@ class CNNTrainer(ModelTrainer):
 		)
 		print(f'\nSize data:')
 		print(f'\ttrain: {self.bs_train_data.shape}')
-		print(f'\tvalidation: {self.bs_val_data.shape}')
-		print(f'\ttest: {self.bs_test_data.shape}')
+		print(f'\tvalidation: {None if self.bs_val_data is None else self.bs_val_data.shape}')
+		print(f'\ttest: {None if self.bs_test_data is None else self.bs_test_data.shape}')
 
 		age_data = age_data[~age_data['is_silence'] & (age_data['event'].isin(self.target_labels))]
 		if 'groups' in rec_split['BA']:
@@ -73,16 +73,15 @@ class CNNTrainer(ModelTrainer):
 		)
 		print(f'\nAge data:')
 		print(f'\ttrain: {self.ba_train_data.shape}')
-		print(f'\tvalidation: {self.ba_val_data.shape}')
-		print(f'\ttest: {self.ba_test_data.shape}')
+		print(f'\tvalidation: {None if self.ba_val_data is None else self.ba_val_data.shape}')
+		print(f'\ttest: {None if self.ba_test_data is None else self.ba_test_data.shape}')
 
 	def __enter__(self):
 		self.work_dir.mkdir(parents = True, exist_ok = True)
 		return self
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
-		# cleanup(self.work_dir)
-		pass
+		cleanup(self.work_dir)
 
 	def train_model_for_size(self, out_dir: str):
 		return self.__do_training__(

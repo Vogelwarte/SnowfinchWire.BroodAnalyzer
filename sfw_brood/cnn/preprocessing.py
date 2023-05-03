@@ -43,21 +43,30 @@ def select_recordings(
 
 	classes = sorted(classes)
 	selector = split_conf['selector']
+	train_idx = np.full(len(data), True)
 
-	test_idx = data[selector].isin(split_conf['test'])
-	test_df = __format_data__(data[test_idx], audio_path, classes)
+	if 'test' in split_conf:
+		test_idx = data[selector].isin(split_conf['test'])
+		test_df = __format_data__(data[test_idx], audio_path, classes)
+		train_idx &= ~test_idx
+	else:
+		test_df = None
 
-	val_idx = data[selector].isin(split_conf['validation'])
-	val_df = __format_data__(data[val_idx], audio_path, classes)
+	if 'validation' in split_conf:
+		val_idx = data[selector].isin(split_conf['validation'])
+		val_df = __format_data__(data[val_idx], audio_path, classes)
+		train_idx &= ~val_idx
+	else:
+		val_df = None
 
-	train_df = __format_data__(data[~(test_idx | val_idx)], audio_path, classes, cls_samples)
+	train_df = __format_data__(data[train_idx], audio_path, classes, cls_samples)
 	test_size = round(0.45 * len(train_df))
 	val_size = round(0.2 * len(train_df))
 
-	if test_size < len(test_df):
+	if test_df is not None and test_size < len(test_df):
 		test_df = test_df.sample(n = test_size)
 
-	if val_size < len(val_df):
+	if val_df is not None and val_size < len(val_df):
 		val_df = val_df.sample(n = val_size)
 
 	return train_df, val_df, test_df
