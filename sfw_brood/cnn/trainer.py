@@ -64,7 +64,7 @@ class CNNTrainer(ModelTrainer):
 			target_label: Optional[str] = None, remove_silence: bool = True,
 			age_groups: Optional[list[tuple[float, float]]] = None,
 			size_groups: Optional[list[tuple[float, float]]] = None,
-			samples_per_class = 'min', age_multi_target = False
+			samples_per_class = 'min', age_multi_target = False, age_mt_threshold = 0.7
 	):
 		self.cnn_arch = cnn_arch
 		self.n_epochs = n_epochs
@@ -79,6 +79,7 @@ class CNNTrainer(ModelTrainer):
 		self.data_split = rec_split
 		self.samples_per_class = samples_per_class
 		self.age_multi_target = age_multi_target
+		self.age_mt_threshold = age_mt_threshold
 
 		bs_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
 		bs_data = bs_data[~bs_data['is_silence'] & (bs_data['event'].isin(self.target_labels))]
@@ -179,15 +180,16 @@ class CNNTrainer(ModelTrainer):
 		return SnowfinchBroodCNN(
 			trained_cnn,
 			model_info = {
-				'learning_rate': cnn.optimizer_params['lr'],
 				'architecture': self.cnn_arch,
+				'learning_rate': self.learn_rate,
+				'batch_size': self.batch_size,
 				'train_epochs': trained_cnn.current_epoch,
 				'data': self.data_path,
 				'data_split': self.data_split,
 				'sample_duration_sec': self.sample_duration_sec,
-				'batch_size': self.batch_size,
 				'events': self.target_labels,
-				'multi_target': multi_target
+				'multi_target': multi_target,
+				'mt_thredholsd': self.age_mt_threshold
 			}
 		)
 

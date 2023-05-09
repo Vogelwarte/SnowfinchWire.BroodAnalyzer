@@ -13,7 +13,7 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 		super().__init__(ModelType.CNN, model_info)
 		self.cnn = trained_cnn
 		self.multi_target = model_info['multi_target'] if 'multi_target' in model_info.keys() else False
-		self.mt_threshold = model_info['mt_threshold'] if 'mt_threshold' in model_info else 0.9
+		self.mt_threshold = model_info['mt_threshold'] if 'mt_threshold' in model_info else 0.7
 
 	def predict(self, recordings: Union[list[str], pd.DataFrame], n_workers: int = 12) -> pd.DataFrame:
 		activation = 'sigmoid' if self.multi_target else 'softmax'
@@ -21,6 +21,7 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 			recordings, activation_layer = activation, num_workers = n_workers, batch_size = 64
 		)
 		result_df = pred_result[0] if type(pred_result) == tuple else pred_result
+		result_df.to_csv('_out/_pred-debug.csv')
 
 		if self.multi_target:
 			result_df = predict_multi_target_labels(result_df, threshold = self.mt_threshold)
