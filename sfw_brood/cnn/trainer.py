@@ -155,7 +155,8 @@ class CNNTrainer(ModelTrainer):
 				'sample_duration_sec': self.sample_duration_sec,
 				'events': self.target_labels,
 				'multi_target': multi_target,
-				'mt_thredholsd': self.age_mt_threshold
+				'mt_thredholsd': self.age_mt_threshold,
+				'age_range': self.age_range
 			}
 		)
 

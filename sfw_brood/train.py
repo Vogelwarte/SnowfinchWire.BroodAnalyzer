@@ -62,7 +62,7 @@ if __name__ == '__main__':
 	arg_parser.add_argument('-c', '--split-config-path', type = str)
 	# arg_parser.add_argument('--group-ages', type = str, default = 'none')
 	# arg_parser.add_argument('--group-sizes', type = str, default = 'none')
-	arg_parser.add_argument('--age-mode', type = str, choices = ['single', 'multi'], default = 'single')
+	arg_parser.add_argument('--age-mode', type = str, default = 'single')
 	arg_parser.add_argument('--samples-per-class', type = str, default = 'min')
 	arg_parser.add_argument('--age-range', type = str, default = 'none')
 	args = arg_parser.parse_args()
@@ -85,7 +85,8 @@ if __name__ == '__main__':
 		# age_groups = parse_cls_groups(args.group_ages),
 		# size_groups = parse_cls_groups(args.group_sizes),
 		samples_per_class = args.samples_per_class,
-		age_multi_target = args.age_mode == 'multi',
+		age_multi_target = 'multi' in args.age_mode,
+		age_mt_threshold = float(args.age_mode.split('-')[1]) if 'multi' in args.age_mode else 'single',
 		age_range = parse_range_str(args.age_range)
 	)
 

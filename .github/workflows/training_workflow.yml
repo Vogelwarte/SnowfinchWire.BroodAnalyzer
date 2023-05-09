@@ -24,15 +24,6 @@ on:
         description: Batch size
         required: true
         default: 64
-#      event:
-#        description: Target event
-#        type: choice
-#        options:
-#          - feeding
-#          - contact
-#          - all
-#        required: true
-#        default: feeding
       n_epochs:
         description: Training epochs count
         required: true
@@ -46,23 +37,6 @@ on:
           - age
           - all
         default: all
-#      age_groups:
-#        description: Wide classes for brood age
-#        required: false
-#        type: choice
-#        options:
-#          - 0-5.5,6-8.5,9-11.5,12-14.5,15-30
-#          - 0-4.5,5-6.5,7-8.5,9-10.5,11-12.5,13-14.5,15-16.5,17-30
-#          - none
-#        default: 0-5.5,6-8.5,9-11.5,12-14.5,15-30
-#      size_groups:
-#        description: Wide classes for brood size
-#        required: false
-#        type: choice
-#        options:
-#          - 0-3,4-6
-#          - none
-#        default: 0-5.5,6-8.5,9-11.5,12-14.5,15-30
       samples_per_class:
         description: Target count of samples per class
         required: true
@@ -91,7 +65,9 @@ on:
         type: choice
         options:
           - single
-          - multi
+          - multi-0.5
+          - multi-0.7
+          - multi-0.9
         default: single
       age_range:
         description: Age range in which size classification is to be performed
@@ -132,17 +108,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-#      - name: Cache training data
-#        id: cache-train-data
-#        uses: actions/cache@v3
-#        with:
-#          key: s2.0-o1.0
-#          path: |
-#            data-export
-#            audio-work
-#      - name: Prepare training data
-#        if: ${{ steps.cache-train-data.outputs.cache-hit != 'true' }}
-#        run: python -m sfw_brood.export_data -s 2.0 -o 1.0 -w audio-work "$DATA_PATH" data-export
       - name: Run training
         run: |
           python -m sfw_brood.train \
@@ -155,7 +120,23 @@ jobs:
           --age-range ${{ github.event.inputs.age_range }} \
           "$WORK_DIR/out/s${{ github.event.inputs.sample_duration }}.0-o1.0" \
           "$WORK_DIR/s${{ github.event.inputs.sample_duration }}-o1/s${{ github.event.inputs.sample_duration }}.0-o1.0"
-      - name: Display FS
+      - name: Test size model inference
+        if: ${{ github.event.inputs.target == 'size' || github.event.inputs.target == 'all' }}
+        run: |
+          OUT_DIR=$(ls _out | grep BS__)
+          python -m sfw_brood.test \
+          -d /home/gardzielb/snowfinch_recordings -c config/${{ github.event.inputs.data_config }} \
+          -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t size -p 2 -w 12 \
+          /home/gardzielb/snowfinch-recordings.csv
+      - name: Test age model inference
+        if: ${{ github.event.inputs.target == 'age' || github.event.inputs.target == 'all' }}
+        run: |
+          OUT_DIR=$(ls _out | grep BA__)
+          python -m sfw_brood.test \
+          -d /home/gardzielb/snowfinch_recordings -c config/${{ github.event.inputs.data_config }} \
+          -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t age -p 2 -w 12 \
+          /home/gardzielb/snowfinch-recordings.csv
+      - name: Explore results directory
         run: tree -I '*venv*|lightning_logs|nemo_experiments' --matchdirs .
       - name: Store results
         run: cp -R _out/* "$WORK_DIR"/results/
