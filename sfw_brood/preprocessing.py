@@ -1,7 +1,7 @@
 import multiprocessing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -241,8 +241,8 @@ def label_age_groups(groups: list[tuple[float, float]]) -> list[str]:
 
 
 def group_ages(
-		age_df: pd.DataFrame, groups: list[tuple[float, float]], multi_target = False
-) -> tuple[pd.DataFrame, list[str]]:
+		age_df: pd.DataFrame, groups: List[Tuple[float, float]], multi_target = False
+) -> Tuple[pd.DataFrame, List[str]]:
 	group_labels = label_age_groups(groups)
 	age_group_df = age_df.rename(columns = {
 		'class_min': 'age_min',

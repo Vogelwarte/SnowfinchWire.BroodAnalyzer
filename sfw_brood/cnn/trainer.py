@@ -5,55 +5,11 @@ import pandas as pd
 from opensoundscape.torch.models.cnn import CNN, InceptionV3, load_model, use_resample_loss
 
 from sfw_brood.model import ModelTrainer
-from sfw_brood.preprocessing import balance_data, group_ages, group_sizes
+from sfw_brood.preprocessing import group_ages, group_sizes
+from .preprocessing import select_recordings
 from .model import SnowfinchBroodCNN
 from .util import cleanup
 from .validator import CNNValidator
-
-
-def __format_data__(
-		data: pd.DataFrame, audio_path: str, classes: list[str], cls_samples: Optional[str] = None
-) -> pd.DataFrame:
-	data['file'] = audio_path + '/' + data['file']
-	data = data.set_index('file')
-	if cls_samples:
-		return balance_data(data[classes], classes, cls_samples)
-	return data[classes]
-
-
-def select_recordings(
-		data: pd.DataFrame, audio_path: str, cls_samples: str, split_conf: dict,
-		classes: Optional[list[str]] = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-	if classes is None:
-		if 'classes' in split_conf.keys() and 'class' in data.columns:
-			classes = [str(cls) for cls in split_conf['classes']]
-			data = data[data['class'].astype('str').isin(classes)]
-		else:
-			classes = set()
-			for cls_col in [col for col in data.columns if 'class' in col]:
-				classes.update(data[cls_col].unique())
-
-	classes = sorted(classes)
-	selector = split_conf['selector']
-
-	test_idx = data[selector].isin(split_conf['test'])
-	test_df = __format_data__(data[test_idx], audio_path, classes)
-
-	val_idx = data[selector].isin(split_conf['validation'])
-	val_df = __format_data__(data[val_idx], audio_path, classes)
-
-	train_df = __format_data__(data[~(test_idx | val_idx)], audio_path, classes, cls_samples)
-	test_size = round(0.45 * len(train_df))
-	val_size = round(0.2 * len(train_df))
-
-	if test_size < len(test_df):
-		test_df = test_df.sample(n = test_size)
-
-	if val_size < len(val_df):
-		val_df = val_df.sample(n = val_size)
-
-	return train_df, val_df, test_df
 
 
 class CNNTrainer(ModelTrainer):
@@ -62,9 +18,10 @@ class CNNTrainer(ModelTrainer):
 			sample_duration_sec: float, rec_split: dict,
 			cnn_arch: str, n_epochs: int, n_workers = 12, batch_size = 100, learn_rate = 0.001,
 			target_label: Optional[str] = None, remove_silence: bool = True,
-			age_groups: Optional[list[tuple[float, float]]] = None,
-			size_groups: Optional[list[tuple[float, float]]] = None,
-			samples_per_class = 'min', age_multi_target = False, age_mt_threshold = 0.7
+			# age_groups: Optional[list[tuple[float, float]]] = None,
+			# size_groups: Optional[list[tuple[float, float]]] = None,
+			samples_per_class = 'min', age_multi_target = False, age_mt_threshold = 0.7,
+			age_range: Optional[tuple[float, float]] = None
 	):
 		self.cnn_arch = cnn_arch
 		self.n_epochs = n_epochs
@@ -80,36 +37,45 @@ class CNNTrainer(ModelTrainer):
 		self.samples_per_class = samples_per_class
 		self.age_multi_target = age_multi_target
 		self.age_mt_threshold = age_mt_threshold
+		self.age_range = age_range
 
-		bs_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
-		bs_data = bs_data[~bs_data['is_silence'] & (bs_data['event'].isin(self.target_labels))]
-		if size_groups:
-			bs_data, size_classes = group_sizes(bs_data, groups = size_groups)
+		age_data = pd.read_csv(f'{data_path}/brood-age.csv', dtype = { 'is_silence': 'bool' })
+		size_data = pd.read_csv(f'{data_path}/brood-size.csv', dtype = { 'is_silence': 'bool', 'class': 'int' })
+
+		if age_range:
+			low, high = age_range
+			age_range_files = age_data.loc[(age_data['class_min'] >= low) & (age_data['class_max'] < high), 'file']
+			size_data = size_data.set_index('file').loc[age_range_files].reset_index()
+
+		size_data = size_data[~size_data['is_silence'] & (size_data['event'].isin(self.target_labels))]
+		if 'groups' in rec_split['BS']:
+			size_data, size_classes = group_sizes(size_data, groups = rec_split['BS']['groups'])
 		else:
 			size_classes = None
 
 		self.bs_train_data, self.bs_val_data, self.bs_test_data = select_recordings(
-			bs_data, audio_path, self.samples_per_class, split_conf = rec_split['BS'], classes = size_classes
+			size_data, audio_path, self.samples_per_class, split_conf = rec_split['BS'], classes = size_classes
 		)
 		print(f'\nSize data:')
 		print(f'\ttrain: {self.bs_train_data.shape}')
-		print(f'\tvalidation: {self.bs_val_data.shape}')
-		print(f'\ttest: {self.bs_test_data.shape}')
+		print(f'\tvalidation: {None if self.bs_val_data is None else self.bs_val_data.shape}')
+		print(f'\ttest: {None if self.bs_test_data is None else self.bs_test_data.shape}')
 
-		ba_data = pd.read_csv(f'{data_path}/brood-age.csv', dtype = { 'is_silence': 'bool' })
-		ba_data = ba_data[~ba_data['is_silence'] & (ba_data['event'].isin(self.target_labels))]
-		if age_groups:
-			ba_data, age_classes = group_ages(ba_data, groups = age_groups, multi_target = age_multi_target)
+		age_data = age_data[~age_data['is_silence'] & (age_data['event'].isin(self.target_labels))]
+		if 'groups' in rec_split['BA']:
+			age_data, age_classes = group_ages(
+				age_data, groups = rec_split['BA']['groups'], multi_target = age_multi_target
+			)
 		else:
 			age_classes = None
 
 		self.ba_train_data, self.ba_val_data, self.ba_test_data = select_recordings(
-			ba_data, audio_path, self.samples_per_class, split_conf = rec_split['BA'], classes = age_classes
+			age_data, audio_path, self.samples_per_class, split_conf = rec_split['BA'], classes = age_classes
 		)
 		print(f'\nAge data:')
 		print(f'\ttrain: {self.ba_train_data.shape}')
-		print(f'\tvalidation: {self.ba_val_data.shape}')
-		print(f'\ttest: {self.ba_test_data.shape}')
+		print(f'\tvalidation: {None if self.ba_val_data is None else self.ba_val_data.shape}')
+		print(f'\ttest: {None if self.ba_test_data is None else self.ba_test_data.shape}')
 
 	def __enter__(self):
 		self.work_dir.mkdir(parents = True, exist_ok = True)
@@ -200,11 +166,17 @@ class CNNTrainer(ModelTrainer):
 		trained_model = self.__train_cnn__(cnn, train_data, validation_data, multi_target)
 
 		if test_data is not None:
-			print(f'Testing model with output dir {out_dir}')
-			validator = CNNValidator(test_data, label, n_workers = self.n_workers)
-			test_result = validator.validate(trained_model, output = out_dir, multi_target = multi_target)
-			print(f'CNN test result: {test_result}')
+			self.__validate__(trained_model, test_data, out_dir, label, multi_target)
+		elif validation_data is not None:
+			print('Running test step with validation data')
+			self.__validate__(trained_model, validation_data, out_dir, label, multi_target)
 		else:
-			print('No test data, skipping validation')
+			print('No test nor validation data, skipping validation')
 
 		return trained_model
+
+	def __validate__(self, model: SnowfinchBroodCNN, test_data: pd.DataFrame, out: str, label: str, multi_target: bool):
+		print(f'Testing model with output dir {out}')
+		validator = CNNValidator(test_data, label, n_workers = self.n_workers)
+		test_result = validator.validate(model, output = out, multi_target = multi_target)
+		print(f'CNN test result: {test_result}')
