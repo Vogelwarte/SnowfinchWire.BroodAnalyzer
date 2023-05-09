@@ -19,17 +19,16 @@ def main():
 
 	cnn_loader = CNNLoader()
 	model = cnn_loader.load_model(args.model)
+	inference = Inference(model)
 
-	with Inference(model, work_dir = Path('.work')) as inference:
-		pred_result = inference.predict(paths = [Path(args.recording_path)], n_workers = args.n_workers)
+	pred_result = inference.predict(paths = [Path(args.recording_path)], n_workers = args.n_workers)
+	print('\nPrediction result:')
+	print(pred_result.agg)
 
-		print('\nPrediction result:')
-		print(pred_result.agg)
-
-		time_str = datetime.now().isoformat()[:19].replace(':', '-')
-		out_path = Path(args.output_dir).joinpath(f'result__{time_str}')
-		pred_result.save(out_path)
-		print(f'Prediction results saved to directory {out_path}')
+	time_str = datetime.now().isoformat()[:19].replace(':', '-')
+	out_path = Path(args.output_dir).joinpath(f'result__{time_str}')
+	pred_result.save(out_path)
+	print(f'Prediction results saved to directory {out_path}')
 
 
 if __name__ == '__main__':

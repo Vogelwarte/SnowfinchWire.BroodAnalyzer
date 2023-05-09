@@ -1,4 +1,3 @@
-import multiprocessing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -7,13 +6,11 @@ from typing import Union, List, Optional
 
 import numpy as np
 import pandas as pd
-import soundfile as sf
 from tqdm import tqdm
 
-from sfw_brood.cnn.util import cleanup
-from sfw_brood.common.preprocessing.io import load_recording_data
+from sfw_brood.common.preprocessing.io import read_audacity_labels
 from sfw_brood.model import SnowfinchBroodClassifier
-from sfw_brood.preprocessing import filter_recording, group_ages, label_age_groups
+from sfw_brood.preprocessing import group_ages, label_age_groups
 from sfw_brood.validation import generate_validation_results
 
 
@@ -29,51 +26,20 @@ class SnowfinchBroodPrediction:
 		self.agg.to_csv(out.joinpath('agg.csv'), index = False)
 
 
-def __extract_test_samples__(args: tuple[Path, Path]) -> list[str]:
-	rec_path, work_dir = args
-
-	try:
-		recording = load_recording_data(rec_path, include_brood_info = False)
-		audio_samples = filter_recording(recording, target_labels = ['feeding'])
-
-		rec_path_rel = rec_path.relative_to(rec_path.root) if rec_path.is_absolute() else rec_path
-		work_dir = work_dir.joinpath(rec_path_rel.parent).joinpath(rec_path.stem)
-		work_dir.mkdir(exist_ok = True, parents = True)
-
-		sample_paths = []
-		for i, (sample, _) in enumerate(audio_samples):
-			sample_path = work_dir.joinpath(f'{i}.wav')
-			sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
-			sample_paths.append(sample_path.as_posix())
-
-		return sample_paths
-
-	except FileNotFoundError:
-		print(f'Warning: failed to load recording {rec_path}')
-		return []
-
-
 class Inference:
-	def __init__(self, model: SnowfinchBroodClassifier, work_dir: Path):
+	def __init__(self, model: SnowfinchBroodClassifier):
 		self.model = model
-		self.work_dir = work_dir
-
-	def __enter__(self):
-		self.work_dir.mkdir(parents = True, exist_ok = True)
-		return self
-
-	def __exit__(self, exc_type, exc_val, exc_tb):
-		cleanup(self.work_dir)
 
 	def predict(self, paths: List[Path], n_workers: int) -> SnowfinchBroodPrediction:
-		sample_paths = self.__prepare_data__(paths, n_workers)
-		print(f'Running predictions for {len(sample_paths)} samples')
-		pred_df = self.model.predict(sample_paths, n_workers = n_workers)
+		samples_df = self.__prepare_data__(paths)
+		print(f'Running predictions for {len(samples_df)} samples:')
+		print(samples_df)
+		pred_df = self.model.predict(samples_df, n_workers = n_workers)
 		pred_df.to_csv('_inference-pred.csv')
 		pred_df, agg_df = self.__format_predictions__(pred_df)
 		return SnowfinchBroodPrediction(pred_df, agg_df)
 
-	def __prepare_data__(self, audio_paths: List[Path], n_workers: int) -> list[str]:
+	def __prepare_data__(self, audio_paths: List[Path]) -> pd.DataFrame:
 		rec_paths = []
 
 		for audio_path in audio_paths:
@@ -86,37 +52,26 @@ class Inference:
 				rec_paths.append(audio_path)
 
 		print(f'Inference: extracting audio samples from {len(rec_paths)} recordings')
-		rec_data = [(rec_path, self.work_dir) for rec_path in rec_paths]
-		sample_paths = []
+		samples_df = pd.DataFrame()
 
-		with multiprocessing.Pool(n_workers) as proc_pool:
-			for samples in tqdm(proc_pool.imap_unordered(__extract_test_samples__, rec_data), total = len(rec_data)):
-				sample_paths.extend(samples)
+		for rec_path in tqdm(rec_paths):
+			labels_file = next(Path(rec_path.parent).glob(f'*{rec_path.stem}*.txt'), None)
+			if not labels_file:
+				continue
 
-		# for rec_path in recordings:
-		# 	try:
-		# 		recording = load_recording_data(rec_path, include_brood_info = False)
-		# 		audio_samples = filter_recording(recording, target_labels = ['feeding'])
-		#
-		# 		rec_path_rel = rec_path.relative_to(rec_path.root) if rec_path.is_absolute() else rec_path
-		# 		work_dir = self.work_dir.joinpath(rec_path_rel.parent).joinpath(rec_path.stem)
-		# 		work_dir.mkdir(exist_ok = True, parents = True)
-		#
-		# 		for i, (sample, _) in enumerate(audio_samples):
-		# 			sample_path = work_dir.joinpath(f'{i}.wav')
-		# 			sf.write(sample_path, sample, samplerate = recording.audio_sample_rate)
-		# 			sample_paths.append(sample_path.as_posix())
-		#
-		# 	except FileNotFoundError:
-		# 		print(f'Warning: failed to load recording {rec_path}')
-		# 		continue
+			labels_list = read_audacity_labels(labels_file)
+			labels_df = pd.DataFrame(labels_list).convert_dtypes()
+			if labels_df.empty:
+				continue
 
-		# return [rec_path.as_posix() for rec_path in rec_paths]
-		return sample_paths
+			rec_df = labels_df[labels_df['label'] == 'feeding'].rename(
+				columns = { 'start': 'start_time', 'end': 'end_time' }
+			)
+			rec_df['file'] = rec_path
+			rec_df = rec_df.set_index(['file', 'start_time', 'end_time'])
+			samples_df = pd.concat([samples_df, rec_df])
 
-	def __extract_rec_path__(self, sample_path: str) -> str:
-		sample_path = Path(sample_path)
-		return sample_path.parent.relative_to(self.work_dir).as_posix()
+		return samples_df
 
 	def __extract_brood_id__(self, rec_path: str) -> str:
 		return Path(rec_path).parent.parent.stem
@@ -131,12 +86,11 @@ class Inference:
 	def __format_predictions__(self, pred_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 		classes = [col for col in pred_df.columns if col not in ['start_time', 'end_time', 'file']]
 		pred_df['predicted_class'] = pred_df[classes].idxmax(axis = 1)
-
 		pred_df['duration'] = pred_df['end_time'] - pred_df['start_time']
-		pred_df['rec_path'] = pred_df['file'].apply(self.__extract_rec_path__)
+		pred_df = pred_df.reset_index().rename(columns = { 'file': 'rec_path' })
 
 		agg_map = {
-			'file': 'count',
+			'index': 'count',
 			'duration': 'sum'
 		}
 
@@ -145,14 +99,14 @@ class Inference:
 
 		agg_cols = ['rec_path'] + list(agg_map.keys())
 		agg_df = pred_df[agg_cols].groupby('rec_path').agg(agg_map)
-		agg_df = agg_df.reset_index().rename(columns = { 'file': 'n_samples' })
+		agg_df = agg_df.reset_index().rename(columns = { 'index': 'n_samples' })
 		agg_df['brood_id'] = agg_df['rec_path'].apply(self.__extract_brood_id__)
 		agg_df['datetime'] = agg_df['rec_path'].apply(self.__extract_datetime__)
 		for cls in classes:
 			agg_df[f'{cls}_score'] = agg_df[cls] / agg_df['n_samples']
 			agg_df.rename(inplace = True, columns = { cls: f'{cls}_n_samples' })
 
-		pred_df = pred_df[['file', 'start_time', 'end_time', 'predicted_class']]
+		pred_df = pred_df[['rec_path', 'start_time', 'end_time', 'predicted_class']]
 
 		return pred_df, agg_df
 
@@ -275,10 +229,10 @@ class BroodSizeInferenceValidator(InferenceValidator):
 
 		classes = self._classes_()
 		for bs in classes:
-			pred_agg_df[bs] = pred_df[f'{bs}_n_samples'] / pred_df['n_samples']
+			pred_agg_df[bs] = pred_agg_df[f'{bs}_n_samples'] / pred_agg_df['n_samples']
 
+		bs_max = pred_agg_df[classes].idxmax(axis = 1)
 		for bs in classes:
-			bs_max = pred_agg_df[classes].idxmax(axis = 1)
 			pred_agg_df[bs] = np.where(bs_max == bs, 1, 0)
 
 		return pred_agg_df

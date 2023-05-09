@@ -3,7 +3,7 @@ import zipfile
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import pandas as pd
 
@@ -18,7 +18,7 @@ class SnowfinchBroodClassifier(ABC):
 		self.model_info = model_info
 
 	@abstractmethod
-	def predict(self, recording_paths: list[str], n_workers: int) -> pd.DataFrame:
+	def predict(self, recordings: Union[pd.DataFrame, list[str]], n_workers: int) -> pd.DataFrame:
 		pass
 
 	def serialize(self, path: str):
