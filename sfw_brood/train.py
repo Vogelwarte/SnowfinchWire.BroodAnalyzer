@@ -65,6 +65,7 @@ if __name__ == '__main__':
 	arg_parser.add_argument('--age-mode', type = str, default = 'single')
 	arg_parser.add_argument('--samples-per-class', type = str, default = 'min')
 	arg_parser.add_argument('--age-range', type = str, default = 'none')
+	arg_parser.add_argument('--out', type = str, default = '_out')
 	args = arg_parser.parse_args()
 
 	with open(args.split_config_path, mode = 'rt') as split_file:
@@ -93,11 +94,11 @@ if __name__ == '__main__':
 	with trainer:
 		try:
 			if args.target == 'size':
-				trainer.train_model_for_size(out_dir = f'_out/BS__{make_time_str()}')
+				trainer.train_model_for_size(out_dir = f'{args.out}/BS__{make_time_str()}')
 			elif args.target == 'age':
-				trainer.train_model_for_age(out_dir = f'_out/BA__{make_time_str()}')
+				trainer.train_model_for_age(out_dir = f'{args.out}/BA__{make_time_str()}')
 			else:
-				trainer.train_model_for_size(out_dir = f'_out/BS__{make_time_str()}')
-				trainer.train_model_for_age(out_dir = f'_out/BA__{make_time_str()}')
+				trainer.train_model_for_size(out_dir = f'{args.out}/BS__{make_time_str()}')
+				trainer.train_model_for_age(out_dir = f'{args.out}/BA__{make_time_str()}')
 		except Exception as e:
 			print(e)
