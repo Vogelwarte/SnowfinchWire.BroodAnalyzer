@@ -43,7 +43,10 @@ if __name__ == '__main__':
 		)
 	else:
 		data_config = data_config['BS']
-		validator = BroodSizeInferenceValidator(period_days = args.period_days)
+		validator = BroodSizeInferenceValidator(
+			period_days = args.period_days,
+			classes = data_config['classes'] if 'classes' in data_config else [2, 3, 4, 5]
+		)
 
 	test_data = pd.read_csv(args.test_data)
 	test_broods = data_config['test'] if 'test' in data_config.keys() else data_config['validation']

@@ -187,11 +187,12 @@ class InferenceValidator(ABC):
 
 
 class BroodSizeInferenceValidator(InferenceValidator):
-	def __init__(self, period_days: int):
+	def __init__(self, period_days: int, classes: list):
 		super().__init__(period_days, label = 'brood size')
+		self.__classes__ = classes
 
 	def _classes_(self) -> list:
-		return [2, 3, 4, 5]
+		return self.__classes__
 
 	def _aggregate_test_data_(self, test_data: pd.DataFrame) -> pd.DataFrame:
 		classes = self._classes_()
