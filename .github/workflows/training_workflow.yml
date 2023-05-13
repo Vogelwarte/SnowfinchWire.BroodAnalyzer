@@ -49,6 +49,9 @@ on:
         options:
           - data-split-server.json
           - data-no-test.json
+          - data-fold-1.json
+          - data-fold-2.json
+          - data-fold-3.json
         default: data-split-server.json
       sample_duration:
         description: Duration of train/test sound sample
