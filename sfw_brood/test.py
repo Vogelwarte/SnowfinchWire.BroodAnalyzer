@@ -46,7 +46,8 @@ if __name__ == '__main__':
 		validator = BroodSizeInferenceValidator(period_days = args.period_days)
 
 	test_data = pd.read_csv(args.test_data)
-	test_data = test_data[test_data[data_config['selector']].isin(data_config['test'])]
+	test_broods = data_config['test'] if 'test' in data_config.keys() else data_config['validation']
+	test_data = test_data[test_data[data_config['selector']].isin(test_broods)]
 	print(f'Running inference tests for broods {data_config["test"]}')
 
 	validator.validate_inference(
