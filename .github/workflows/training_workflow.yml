@@ -52,6 +52,13 @@ on:
           - data-fold-1.json
           - data-fold-2.json
           - data-fold-3.json
+          - data-age-0-8-fold-1.json
+          - data-age-0-8-fold-2.json
+          - data-age-0-8-fold-3.json
+          - data-age-8-13-fold-1.json
+          - data-age-8-13-fold-2.json
+          - data-age-13+-fold-1.json
+          - data-age-13+-fold-2.json
         default: data-split-server.json
       sample_duration:
         description: Duration of train/test sound sample
@@ -77,10 +84,9 @@ on:
         required: false
         type: choice
         options:
-          - 0-5
-          - 5-10
-          - 10-15
-          - 15-30
+          - 0-8
+          - 8-13
+          - 13-30
           - none
         default: none
 
