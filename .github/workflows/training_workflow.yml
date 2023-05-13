@@ -19,7 +19,7 @@ on:
       learning_rate:
         description: Learning rate
         required: true
-        default: 0.0005
+        default: 0.003
       batch_size:
         description: Batch size
         required: true

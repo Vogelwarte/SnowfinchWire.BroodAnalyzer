@@ -1,14 +1,14 @@
 {
-  "id": "f1",
+  "id": "age-13+-f1",
   "BS": {
     "selector": "brood_id",
     "validation": [
       "Furka33_22a",
       "Furka33_22a_val",
       "Furka31_22a",
-      "Furka34_22a"
+      "4_4_1_22"
     ],
-    "classes": [2, 3, 4, 5]
+    "classes": [2, 3, 4]
   },
   "BA": {
     "selector": "brood_id",

@@ -149,7 +149,7 @@ def generate_validation_results(
 
 		if multi_target:
 			cm = multilabel_confusion_matrix(y_true, y_pred).astype(float)
-			for i in cm.shape[0]:
+			for i in range(cm.shape[0]):
 				cm[i] = normalize_confusion_matrix(cm[i])
 		else:
 			cm = normalize_confusion_matrix(confusion_matrix(y_true, y_pred, labels = classes))
