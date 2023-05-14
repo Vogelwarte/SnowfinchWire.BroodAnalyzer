@@ -207,7 +207,7 @@ class InferenceValidator(ABC):
 			audio_paths, n_workers, agg_period_days = self.period_days,
 			period_map = period_map, multi_target_threshold = self.multi_target_threshold
 		)
-		pred_df = pred.by_brood_periods
+		pred_df = pred.by_brood_periods.set_index(['brood_id', 'period_start'])
 		# pred.by_rec['datetime'] = pd.to_datetime(pred.by_rec['datetime'])
 		# pred_df, _ = assign_recording_periods(pred.by_rec, period_days = self.period_days, period_map = period_map)
 		# pred_df = self._aggregate_predictions_(pred_df).set_index(['brood_id', 'period_start'])
