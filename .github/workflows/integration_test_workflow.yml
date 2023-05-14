@@ -1,6 +1,6 @@
 name: "Run integration tests"
 
-on: [ workflow_dispatch ]
+on: [ push ]
 
 permissions:
   contents: read
