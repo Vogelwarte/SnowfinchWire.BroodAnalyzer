@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from sfw_brood.common.preprocessing.io import read_audacity_labels
 from sfw_brood.model import SnowfinchBroodClassifier
-from sfw_brood.preprocessing import group_ages, label_class_groups
+from sfw_brood.preprocessing import group_ages, label_class_groups, group_sizes
 from sfw_brood.validation import generate_validation_results
 
 
@@ -35,7 +35,8 @@ class Inference:
 			model_data_config = self.model.model_info['data_config']
 			if 'groups' in model_data_config.keys():
 				self.classes = label_class_groups(model_data_config['groups'])
-			self.classes = model_data_config['classes']
+			else:
+				self.classes = model_data_config['classes']
 		except KeyError:
 			raise RuntimeError('Invalid model data info: no information about classes')
 
@@ -239,13 +240,17 @@ class InferenceValidator(ABC):
 
 
 class BroodSizeInferenceValidator(InferenceValidator):
-	def __init__(self, period_days: int):
+	def __init__(self, period_days: int, size_groups: Optional[list[tuple[float, float]]] = None):
 		super().__init__(period_days, target = 'size', multi_target_threshold = 0.0)
+		self.size_groups = size_groups
 
 	# def _classes_(self) -> list:
 	# 	return self.__classes__
 
 	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list) -> pd.DataFrame:
+		# if self.size_groups is not None:
+		# 	test_data = group_sizes(test_data, groups = self.size_groups)
+		#
 		size_test_df = test_data.drop(columns = ['age_min', 'age_max', 'datetime'])
 
 		size_test_df['brood_size'] = size_test_df['brood_size'].astype('category')
@@ -312,7 +317,9 @@ class BroodAgeInferenceValidator(InferenceValidator):
 		age_test_agg = age_test_agg.rename(columns = { 'rec_path': 'rec_count' })
 
 		for age_group in classes:
-			age_test_agg[age_group] = np.where(age_test_agg[age_group] / age_test_agg['rec_count'] > 0.3, 1, 0)
+			age_test_agg[age_group] = np.where(
+				age_test_agg[age_group] / age_test_agg['rec_count'] > self.multi_target_threshold, 1, 0
+			)
 
 		return age_test_agg
 
