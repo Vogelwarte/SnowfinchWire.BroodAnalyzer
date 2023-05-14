@@ -1,0 +1,100 @@
+name: "Train model"
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+env:
+  WORK_DIR: /home/gardzielb/sfw-brood-work
+
+jobs:
+  integration_tests:
+    name: "Train ${{ github.event.inputs.cnn_arch }}(lr${{ github.event.inputs.learning_rate }}, bs${{ github.event.inputs.batch_size }}) for ${{ github.event.inputs.target }}"
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout submodules using a PAT
+        run: |
+          git config --file .gitmodules --get-regexp url | while read url; do
+            git config --file=.gitmodules $(echo "$url" | sed -E "s/git@github.com:|https:\/\/github.com\//https:\/\/${{ secrets.SNOWFINCHWIRE_ALL_CHECKOUT }}:${{ secrets.SNOWFINCHWIRE_ALL_CHECKOUT }}@github.com\//")
+          done
+          git submodule sync
+          git submodule update --init --recursive
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Size multiclass every age
+        run: |
+          python -m sfw_brood.train \
+            -n 1 -a resnet18 -b 64 -l 0.003 -d 5 -t size -e feeding -c config/data-split-server.json -w 12 \
+            --samples-per-class 1000 --age-mode simple --age-range none \
+          "$WORK_DIR/out/s5.0-o1.0" "$WORK_DIR/s5-o1/s5.0-o1.0"
+          OUT_DIR=$(ls -t _out | grep BS__ | head -n 1)
+          python -m sfw_brood.test \
+            -d /home/gardzielb/snowfinch_recordings -c config/data-split-server.json \
+            -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t size -p 2 -w 12 \
+            /home/gardzielb/snowfinch-recordings.csv
+      - name: Size binary every age
+        run: |
+          python -m sfw_brood.train \
+            -n 1 -a resnet18 -b 64 -l 0.003 -d 5 -t size -e feeding -c config/data-config-size-groups.json -w 12 \
+            --samples-per-class 1000 --age-mode simple --age-range none \
+          "$WORK_DIR/out/s5.0-o1.0" "$WORK_DIR/s5-o1/s5.0-o1.0"
+          OUT_DIR=$(ls -t _out | grep BS__ | head -n 1)
+          python -m sfw_brood.test \
+            -d /home/gardzielb/snowfinch_recordings -c config/data-config-size-groups.json \
+            -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t size -p 2 -w 12 \
+            /home/gardzielb/snowfinch-recordings.csv
+      - name: Size multiclass age 13+
+        run: |
+          python -m sfw_brood.train \
+            -n 1 -a resnet18 -b 64 -l 0.003 -d 5 -t size -e feeding -c config/data-age-13+-fold-1.json -w 12 \
+            --samples-per-class 1000 --age-mode simple --age-range 13-30 \
+          "$WORK_DIR/out/s5.0-o1.0" "$WORK_DIR/s5-o1/s5.0-o1.0"
+          OUT_DIR=$(ls -t _out | grep BS__ | head -n 1)
+          python -m sfw_brood.test \
+            -d /home/gardzielb/snowfinch_recordings -c config/data-age-13+-fold-1.json \
+            -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t size -p 2 -w 12 \
+            /home/gardzielb/snowfinch-recordings.csv
+      - name: Size multiclass age 13+
+        run: |
+          python -m sfw_brood.train \
+            -n 1 -a resnet18 -b 64 -l 0.003 -d 5 -t size -e feeding \
+            -c config/data-age-size-groups-13+-fold-1.json -w 12 \
+            --samples-per-class 1000 --age-mode simple --age-range 13-30 \
+          "$WORK_DIR/out/s5.0-o1.0" "$WORK_DIR/s5-o1/s5.0-o1.0"
+          OUT_DIR=$(ls -t _out | grep BS__ | head -n 1)
+          python -m sfw_brood.test \
+            -d /home/gardzielb/snowfinch_recordings -c config/data-age-size-groups-13+-fold-1.json.json \
+            -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t size -p 2 -w 12 \
+            /home/gardzielb/snowfinch-recordings.csv
+      - name: Age single target
+        run: |
+          python -m sfw_brood.train \
+            -n 1 -a resnet18 -b 64 -l 0.003 -d 5 -t age -e feeding -c config/data-split-server.json -w 12 \
+            --samples-per-class 1000 --age-mode simple --age-range none \
+          "$WORK_DIR/out/s5.0-o1.0" "$WORK_DIR/s5-o1/s5.0-o1.0"
+          OUT_DIR=$(ls -t _out | grep BA__ | head -n 1)
+          python -m sfw_brood.test \
+            -d /home/gardzielb/snowfinch_recordings -c config/data-split-server.json \
+            -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t age -p 2 -w 12 \
+            /home/gardzielb/snowfinch-recordings.csv
+      - name: Age multi target
+        run: |
+          python -m sfw_brood.train \
+            -n 1 -a resnet18 -b 64 -l 0.003 -d 5 -t age -e feeding -c config/data-split-server.json -w 12 \
+            --samples-per-class 1000 --age-mode multi-0.5 --age-range none \
+          "$WORK_DIR/out/s5.0-o1.0" "$WORK_DIR/s5-o1/s5.0-o1.0"
+          OUT_DIR=$(ls -t _out | grep BA__ | head -n 1)
+          python -m sfw_brood.test \
+            -d /home/gardzielb/snowfinch_recordings -c config/data-split-server.json \
+            -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t age -p 2 -w 12 \
+            /home/gardzielb/snowfinch-recordings.csv
+      - name: Examin results directory
+        run: tree _out
