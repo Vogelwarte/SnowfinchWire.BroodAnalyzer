@@ -10,7 +10,7 @@ env:
 
 jobs:
   integration_tests:
-    name: "Train ${{ github.event.inputs.cnn_arch }}(lr${{ github.event.inputs.learning_rate }}, bs${{ github.event.inputs.batch_size }}) for ${{ github.event.inputs.target }}"
+    name: "Integration tests job"
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
