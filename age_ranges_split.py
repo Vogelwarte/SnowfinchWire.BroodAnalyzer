@@ -26,7 +26,7 @@ def size_data_for_age_range(low, high, age_df, size_df):
 if __name__ == '__main__':
 	age_data = pd.read_csv('/home/gardzielb/sfw-brood-work/out/s5.0-o1.0/brood-age.csv')
 	size_data = pd.read_csv('/home/gardzielb/sfw-brood-work/out/s5.0-o1.0/brood-size.csv', index_col = 'file')
-	age_ranges = [(0, 5), (5, 10), (10, 15), (15, 30)]
+	age_ranges = [(0, 8), (8, 13), (13, 30)]
 	size_data_split = split_size_data(size_data, age_data, age_ranges)
 
 	for size_df, age_range in zip(size_data_split, age_ranges):
