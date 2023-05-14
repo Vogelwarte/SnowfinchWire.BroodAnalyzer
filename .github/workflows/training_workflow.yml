@@ -60,6 +60,13 @@ on:
           - data-age-8-13-fold-2.json
           - data-age-13+-fold-1.json
           - data-age-13+-fold-2.json
+          - data-age-0-8-size-groups-fold-1.json
+          - data-age-0-8-size-groups-fold-2.json
+          - data-age-0-8-size-groups-fold-3.json
+          - data-age-8-13-size-groups-fold-1.json
+          - data-age-8-13-size-groups-fold-2.json
+          - data-age-13+-size-groups-fold-1.json
+          - data-age-13+-size-groups-fold-2.json
         default: data-split-server.json
       sample_duration:
         description: Duration of train/test sound sample
