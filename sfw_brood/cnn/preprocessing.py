@@ -24,7 +24,8 @@ def __format_data__(
 	data['file'] = audio_path + '/' + data['file']
 	data = data.set_index('file')
 	if cls_samples:
-		return balance_data(data[classes], classes, cls_samples)
+		balanced_data = balance_data(data[classes], classes, cls_samples)
+		return balanced_data.reset_index().drop_duplicates().set_index('file')
 	return data[classes]
 
 

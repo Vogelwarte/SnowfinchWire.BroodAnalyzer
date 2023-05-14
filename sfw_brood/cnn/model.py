@@ -29,7 +29,7 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 			result_df = predict_single_target_labels(result_df)
 
 		print(f'Predictions made, result df shape = {result_df.shape}')
-		return result_df.reset_index()
+		return result_df.reset_index().drop_duplicates()
 
 	def _serialize_(self, path: str):
 		self.cnn.save(path)
