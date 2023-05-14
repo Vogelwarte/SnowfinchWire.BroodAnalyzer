@@ -23,8 +23,9 @@ class SnowfinchBroodPrediction:
 	def save(self, out: Union[Path, str]):
 		out = Path(out)
 		out.mkdir(parents = True, exist_ok = True)
-		self.raw.to_csv(out.joinpath('raw.csv'), index = False)
-		self.by_rec.to_csv(out.joinpath('agg.csv'), index = False)
+		self.raw.to_csv(out.joinpath('sample-preds.csv'), index = False)
+		self.by_rec.to_csv(out.joinpath('rec-preds.csv'), index = False)
+		self.by_brood_periods.to_csv(out.joinpath('brood-period-preds.csv'), index = False)
 
 
 class Inference:
