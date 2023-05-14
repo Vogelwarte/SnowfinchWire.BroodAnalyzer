@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from sfw_brood.common.preprocessing.io import read_audacity_labels
 from sfw_brood.model import SnowfinchBroodClassifier
-from sfw_brood.preprocessing import group_ages
+from sfw_brood.preprocessing import group_ages, label_class_groups
 from sfw_brood.validation import generate_validation_results
 
 
@@ -31,6 +31,13 @@ class SnowfinchBroodPrediction:
 class Inference:
 	def __init__(self, model: SnowfinchBroodClassifier):
 		self.model = model
+		try:
+			model_data_config = self.model.model_info['data_config']
+			if 'groups' in model_data_config.keys():
+				self.classes = label_class_groups(model_data_config['groups'])
+			self.classes = model_data_config['classes']
+		except KeyError:
+			raise RuntimeError('Invalid model data info: no information about classes')
 
 	def predict(
 			self, paths: List[Path], n_workers: int, agg_period_days: int,
@@ -46,16 +53,6 @@ class Inference:
 			agg_df, agg_period_days, multi_target_threshold, period_map
 		)
 		return SnowfinchBroodPrediction(pred_df, agg_df, brood_period_agg_df)
-
-	@property
-	def classes(self):
-		try:
-			model_data_config = self.model.model_info['data_config']
-			if 'groups' in model_data_config.keys():
-				return model_data_config['groups']
-			return model_data_config['classes']
-		except KeyError:
-			raise RuntimeError('Invalid model data info: no information about classes')
 
 	def __aggregate_by_brood_periods__(
 			self, pred_df: pd.DataFrame, period_days: int, multi_target_threshold = 0.7, period_map = None
@@ -74,16 +71,15 @@ class Inference:
 		pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
 		pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
 
-		classes = self.classes
 		if self.model.model_info['target'] == 'size':
-			for bs in classes:
+			for bs in self.classes:
 				pred_agg_df[bs] = pred_agg_df[f'{bs}_n_samples'] / pred_agg_df['n_samples']
 
-			bs_max = pred_agg_df[classes].idxmax(axis = 1)
-			for bs in classes:
+			bs_max = pred_agg_df[self.classes].idxmax(axis = 1)
+			for bs in self.classes:
 				pred_agg_df[bs] = np.where(bs_max == bs, 1, 0)
 		else:
-			for age_group in classes:
+			for age_group in self.classes:
 				pred_agg_df[age_group] = np.where(
 					pred_agg_df[f'{age_group}_n_samples'] / pred_agg_df['n_samples'] > multi_target_threshold, 1, 0
 				)
