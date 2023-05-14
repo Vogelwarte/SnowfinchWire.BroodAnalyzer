@@ -17,27 +17,73 @@ from sfw_brood.validation import generate_validation_results
 @dataclass
 class SnowfinchBroodPrediction:
 	raw: pd.DataFrame
-	agg: pd.DataFrame
+	by_rec: pd.DataFrame
+	by_brood_periods: pd.DataFrame
 
 	def save(self, out: Union[Path, str]):
 		out = Path(out)
 		out.mkdir(parents = True, exist_ok = True)
 		self.raw.to_csv(out.joinpath('raw.csv'), index = False)
-		self.agg.to_csv(out.joinpath('agg.csv'), index = False)
+		self.by_rec.to_csv(out.joinpath('agg.csv'), index = False)
 
 
 class Inference:
 	def __init__(self, model: SnowfinchBroodClassifier):
 		self.model = model
 
-	def predict(self, paths: List[Path], n_workers: int) -> SnowfinchBroodPrediction:
+	def predict(
+			self, paths: List[Path], n_workers: int, agg_period_days: int,
+			multi_target_threshold = 0.7, period_map = None
+	) -> SnowfinchBroodPrediction:
 		samples_df = self.__prepare_data__(paths)
 		print(f'Running predictions for {len(samples_df)} samples:')
 		print(samples_df)
 		pred_df = self.model.predict(samples_df, n_workers = n_workers)
 		pred_df.to_csv('_inference-pred.csv')
 		pred_df, agg_df = self.__format_predictions__(pred_df)
-		return SnowfinchBroodPrediction(pred_df, agg_df)
+		brood_period_agg_df = self.__aggregate_by_brood_periods__(
+			agg_df, agg_period_days, multi_target_threshold, period_map
+		)
+		return SnowfinchBroodPrediction(pred_df, agg_df, brood_period_agg_df)
+
+	def __aggregate_by_brood_periods__(
+			self, pred_df: pd.DataFrame, period_days: int, multi_target_threshold = 0.7, period_map = None
+	) -> pd.DataFrame:
+		pred_df['datetime'] = pd.to_datetime(pred_df['datetime'])
+		pred_df, _ = assign_recording_periods(pred_df, period_days = period_days, period_map = period_map)
+
+		agg_map = { 'rec_path': 'count' }
+		test_cols = ['rec_path', 'brood_id', 'period_start']
+
+		for col in pred_df.columns:
+			if 'n_samples' in col:
+				test_cols.append(col)
+				agg_map[col] = 'sum'
+
+		pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
+		pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
+
+		if 'groups' in self.model.model_info.keys():
+			classes = self.model.model_info['groups']
+		elif 'classes' in self.model.model_info.keys():
+			classes = self.model.model_info['classes']
+		else:
+			raise RuntimeError('Invalid model info: no information about classes')
+
+		if self.model.model_info['target'] == 'size':
+			for bs in classes:
+				pred_agg_df[bs] = pred_agg_df[f'{bs}_n_samples'] / pred_agg_df['n_samples']
+
+			bs_max = pred_agg_df[classes].idxmax(axis = 1)
+			for bs in classes:
+				pred_agg_df[bs] = np.where(bs_max == bs, 1, 0)
+		else:
+			for age_group in classes:
+				pred_agg_df[age_group] = np.where(
+					pred_agg_df[f'{age_group}_n_samples'] / pred_agg_df['n_samples'] > multi_target_threshold, 1, 0
+				)
+
+		return pred_agg_df
 
 	def __prepare_data__(self, audio_paths: List[Path]) -> pd.DataFrame:
 		rec_paths = []
@@ -137,9 +183,10 @@ def assign_recording_periods(
 
 
 class InferenceValidator(ABC):
-	def __init__(self, period_days: int, label: str):
+	def __init__(self, period_days: int, target: str, multi_target_threshold: float):
 		self.period_days = period_days
-		self.label = label
+		self.target = target
+		self.multi_target_threshold = multi_target_threshold
 
 	def validate_inference(
 			self, inference: Inference, test_data: pd.DataFrame, data_root: Path,
@@ -151,10 +198,14 @@ class InferenceValidator(ABC):
 		test_data, period_map = assign_recording_periods(test_data, period_days = self.period_days)
 		test_data = self._aggregate_test_data_(test_data)
 
-		pred = inference.predict(audio_paths, n_workers)
-		pred.agg['datetime'] = pd.to_datetime(pred.agg['datetime'])
-		pred_df, _ = assign_recording_periods(pred.agg, period_days = self.period_days, period_map = period_map)
-		pred_df = self._aggregate_predictions_(pred_df).set_index(['brood_id', 'period_start'])
+		pred = inference.predict(
+			audio_paths, n_workers, agg_period_days = self.period_days,
+			period_map = period_map, multi_target_threshold = self.multi_target_threshold
+		)
+		pred_df = pred.by_brood_periods
+		# pred.by_rec['datetime'] = pd.to_datetime(pred.by_rec['datetime'])
+		# pred_df, _ = assign_recording_periods(pred.by_rec, period_days = self.period_days, period_map = period_map)
+		# pred_df = self._aggregate_predictions_(pred_df).set_index(['brood_id', 'period_start'])
 
 		if output:
 			out_path = Path(output)
@@ -168,7 +219,7 @@ class InferenceValidator(ABC):
 			test_df = test_data.set_index(['brood_id', 'period_start']).loc[pred_df.index, classes],
 			pred_df = pred_df[classes],
 			classes = classes,
-			target_label = self.label,
+			target_label = f'brood {self.target}',
 			output = output,
 			multi_target = multi_target
 		)
@@ -181,14 +232,14 @@ class InferenceValidator(ABC):
 	def _aggregate_test_data_(self, test_data: pd.DataFrame) -> pd.DataFrame:
 		pass
 
-	@abstractmethod
-	def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
-		pass
+# @abstractmethod
+# def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
+# 	pass
 
 
 class BroodSizeInferenceValidator(InferenceValidator):
 	def __init__(self, period_days: int, classes: list):
-		super().__init__(period_days, label = 'brood size')
+		super().__init__(period_days, target = 'size', multi_target_threshold = 0.0)
 		self.__classes__ = classes
 
 	def _classes_(self) -> list:
@@ -216,34 +267,33 @@ class BroodSizeInferenceValidator(InferenceValidator):
 
 		return size_test_agg
 
-	def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
-		agg_map = { 'rec_path': 'count' }
-		test_cols = ['rec_path', 'brood_id', 'period_start']
-
-		for col in pred_df.columns:
-			if 'n_samples' in col:
-				test_cols.append(col)
-				agg_map[col] = 'sum'
-
-		pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
-		pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
-
-		classes = self._classes_()
-		for bs in classes:
-			pred_agg_df[bs] = pred_agg_df[f'{bs}_n_samples'] / pred_agg_df['n_samples']
-
-		bs_max = pred_agg_df[classes].idxmax(axis = 1)
-		for bs in classes:
-			pred_agg_df[bs] = np.where(bs_max == bs, 1, 0)
-
-		return pred_agg_df
+# def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
+# 	agg_map = { 'rec_path': 'count' }
+# 	test_cols = ['rec_path', 'brood_id', 'period_start']
+#
+# 	for col in pred_df.columns:
+# 		if 'n_samples' in col:
+# 			test_cols.append(col)
+# 			agg_map[col] = 'sum'
+#
+# 	pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
+# 	pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
+#
+# 	classes = self._classes_()
+# 	for bs in classes:
+# 		pred_agg_df[bs] = pred_agg_df[f'{bs}_n_samples'] / pred_agg_df['n_samples']
+#
+# 	bs_max = pred_agg_df[classes].idxmax(axis = 1)
+# 	for bs in classes:
+# 		pred_agg_df[bs] = np.where(bs_max == bs, 1, 0)
+#
+# 	return pred_agg_df
 
 
 class BroodAgeInferenceValidator(InferenceValidator):
 	def __init__(self, period_days: int, age_groups: list[tuple[float, float]], multi_target_threshold = 0.3):
-		super().__init__(period_days, label = 'brood age')
+		super().__init__(period_days, target = 'age', multi_target_threshold = multi_target_threshold)
 		self.age_groups = age_groups
-		self.multi_target_threshold = multi_target_threshold
 		self.__classes__ = label_age_groups(age_groups)
 
 	def _classes_(self) -> list:
@@ -267,21 +317,21 @@ class BroodAgeInferenceValidator(InferenceValidator):
 
 		return age_test_agg
 
-	def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
-		agg_map = { 'rec_path': 'count' }
-		test_cols = ['rec_path', 'brood_id', 'period_start']
-
-		for col in pred_df.columns:
-			if 'n_samples' in col:
-				test_cols.append(col)
-				agg_map[col] = 'sum'
-
-		pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
-		pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
-
-		for age_group in self._classes_():
-			pred_agg_df[age_group] = np.where(
-				pred_agg_df[f'{age_group}_n_samples'] / pred_agg_df['n_samples'] > self.multi_target_threshold, 1, 0
-			)
-
-		return pred_agg_df
+# def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
+# 	agg_map = { 'rec_path': 'count' }
+# 	test_cols = ['rec_path', 'brood_id', 'period_start']
+#
+# 	for col in pred_df.columns:
+# 		if 'n_samples' in col:
+# 			test_cols.append(col)
+# 			agg_map[col] = 'sum'
+#
+# 	pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
+# 	pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
+#
+# 	for age_group in self._classes_():
+# 		pred_agg_df[age_group] = np.where(
+# 			pred_agg_df[f'{age_group}_n_samples'] / pred_agg_df['n_samples'] > self.multi_target_threshold, 1, 0
+# 		)
+#
+# 	return pred_agg_df

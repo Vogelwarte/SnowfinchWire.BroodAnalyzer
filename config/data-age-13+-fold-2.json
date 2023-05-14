@@ -1,15 +1,11 @@
 {
   "id": "age-13+-f2",
-  "BS": {
+  "size": {
     "selector": "brood_id",
-    "validation": [
-      "1_2_1_22",
-      "10_1_1_22",
-      "Furka10_22a"
-    ],
+    "validation": ["1_2_1_22", "10_1_1_22", "Furka10_22a"],
     "classes": [2, 3, 4]
   },
-  "BA": {
+  "age": {
     "selector": "brood_id",
     "validation": [],
     "test": [],

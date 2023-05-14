@@ -23,7 +23,7 @@ def main():
 
 	pred_result = inference.predict(paths = [Path(args.recording_path)], n_workers = args.n_workers)
 	print('\nPrediction result:')
-	print(pred_result.agg)
+	print(pred_result.by_rec)
 
 	time_str = datetime.now().isoformat()[:19].replace(':', '-')
 	out_path = Path(args.output_dir).joinpath(f'result__{time_str}')
