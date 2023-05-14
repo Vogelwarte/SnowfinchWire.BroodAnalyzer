@@ -76,7 +76,7 @@ def main():
 	arg_parser.add_argument('-d', '--data-dir', type = str)
 	arg_parser.add_argument('-c', '--data-config-path', type = str)
 	arg_parser.add_argument('-s', '--samples-per-class', type = int)
-	arg_parser.add_argument('-t', '--target', type = str, choices = ['BA', 'BS'])
+	arg_parser.add_argument('-t', '--target', type = str, choices = ['age', 'size'])
 	args = arg_parser.parse_args()
 
 	with open(args.data_config_path) as data_conf_file:

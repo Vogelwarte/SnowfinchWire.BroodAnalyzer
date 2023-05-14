@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from sfw_brood.common.preprocessing.io import read_audacity_labels
 from sfw_brood.model import SnowfinchBroodClassifier
-from sfw_brood.preprocessing import group_ages, label_age_groups
+from sfw_brood.preprocessing import group_ages
 from sfw_brood.validation import generate_validation_results
 
 
@@ -47,6 +47,15 @@ class Inference:
 		)
 		return SnowfinchBroodPrediction(pred_df, agg_df, brood_period_agg_df)
 
+	@property
+	def classes(self):
+		if 'groups' in self.model.model_info.keys():
+			return self.model.model_info['groups']
+		elif 'classes' in self.model.model_info.keys():
+			return self.model.model_info['classes']
+		else:
+			raise RuntimeError('Invalid model info: no information about classes')
+
 	def __aggregate_by_brood_periods__(
 			self, pred_df: pd.DataFrame, period_days: int, multi_target_threshold = 0.7, period_map = None
 	) -> pd.DataFrame:
@@ -64,13 +73,7 @@ class Inference:
 		pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
 		pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
 
-		if 'groups' in self.model.model_info.keys():
-			classes = self.model.model_info['groups']
-		elif 'classes' in self.model.model_info.keys():
-			classes = self.model.model_info['classes']
-		else:
-			raise RuntimeError('Invalid model info: no information about classes')
-
+		classes = self.classes
 		if self.model.model_info['target'] == 'size':
 			for bs in classes:
 				pred_agg_df[bs] = pred_agg_df[f'{bs}_n_samples'] / pred_agg_df['n_samples']
@@ -197,7 +200,7 @@ class InferenceValidator(ABC):
 
 		test_data['datetime'] = pd.to_datetime(test_data['datetime'])
 		test_data, period_map = assign_recording_periods(test_data, period_days = self.period_days)
-		test_data = self._aggregate_test_data_(test_data)
+		test_data = self._aggregate_test_data_(test_data, inference.classes)
 
 		pred = inference.predict(
 			audio_paths, n_workers, agg_period_days = self.period_days,
@@ -215,7 +218,7 @@ class InferenceValidator(ABC):
 			pred_df.to_csv(out_path.joinpath('pred.csv'))
 			pred.save(out_path.joinpath('inference-pred'))
 
-		classes = self._classes_()
+		classes = inference.classes
 		return generate_validation_results(
 			test_df = test_data.set_index(['brood_id', 'period_start']).loc[pred_df.index, classes],
 			pred_df = pred_df[classes],
@@ -225,12 +228,12 @@ class InferenceValidator(ABC):
 			multi_target = multi_target
 		)
 
-	@abstractmethod
-	def _classes_(self) -> list:
-		pass
+	# @abstractmethod
+	# def _classes_(self) -> list:
+	# 	pass
 
 	@abstractmethod
-	def _aggregate_test_data_(self, test_data: pd.DataFrame) -> pd.DataFrame:
+	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list) -> pd.DataFrame:
 		pass
 
 # @abstractmethod
@@ -239,15 +242,13 @@ class InferenceValidator(ABC):
 
 
 class BroodSizeInferenceValidator(InferenceValidator):
-	def __init__(self, period_days: int, classes: list):
+	def __init__(self, period_days: int):
 		super().__init__(period_days, target = 'size', multi_target_threshold = 0.0)
-		self.__classes__ = classes
 
-	def _classes_(self) -> list:
-		return self.__classes__
+	# def _classes_(self) -> list:
+	# 	return self.__classes__
 
-	def _aggregate_test_data_(self, test_data: pd.DataFrame) -> pd.DataFrame:
-		classes = self._classes_()
+	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list) -> pd.DataFrame:
 		size_test_df = test_data.drop(columns = ['age_min', 'age_max', 'datetime'])
 
 		size_test_df['brood_size'] = size_test_df['brood_size'].astype('category')
@@ -295,25 +296,25 @@ class BroodAgeInferenceValidator(InferenceValidator):
 	def __init__(self, period_days: int, age_groups: list[tuple[float, float]], multi_target_threshold = 0.3):
 		super().__init__(period_days, target = 'age', multi_target_threshold = multi_target_threshold)
 		self.age_groups = age_groups
-		self.__classes__ = label_age_groups(age_groups)
+		# self.__classes__ = label_age_groups(age_groups)
 
-	def _classes_(self) -> list:
-		return self.__classes__
+	# def _classes_(self) -> list:
+	# 	return self.__classes__
 
-	def _aggregate_test_data_(self, test_data: pd.DataFrame) -> pd.DataFrame:
+	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list) -> pd.DataFrame:
 		age_test_df, _ = group_ages(
 			test_data.rename(columns = { 'age_min': 'class_min', 'age_max': 'class_max' }),
 			groups = self.age_groups, multi_target = True
 		)
 		age_test_df = age_test_df.drop(columns = ['datetime', 'age_min', 'age_max'])
 		agg_map = { 'rec_path': 'count' }
-		for age_group in self.__classes__:
+		for age_group in classes:
 			agg_map[age_group] = 'sum'
 
 		age_test_agg = age_test_df.groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
 		age_test_agg = age_test_agg.rename(columns = { 'rec_path': 'rec_count' })
 
-		for age_group in self.__classes__:
+		for age_group in classes:
 			age_test_agg[age_group] = np.where(age_test_agg[age_group] / age_test_agg['rec_count'] > 0.3, 1, 0)
 
 		return age_test_agg

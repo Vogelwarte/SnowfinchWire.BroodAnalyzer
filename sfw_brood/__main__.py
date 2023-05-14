@@ -15,15 +15,21 @@ def main():
 	arg_parser.add_argument('-m', '--model', type = str, help = 'Path to serialized model')
 	arg_parser.add_argument('-o', '--output-dir', type = str, default = '_out')
 	arg_parser.add_argument('-w', '--n-workers', type = int, default = 10)
+	arg_parser.add_argument('-p', '--period-days', type = int, default = 2)
+	arg_parser.add_argument('--mt-threshold', type = float, default = 0.5)
 	args = arg_parser.parse_args()
 
 	cnn_loader = CNNLoader()
 	model = cnn_loader.load_model(args.model)
 	inference = Inference(model)
 
-	pred_result = inference.predict(paths = [Path(args.recording_path)], n_workers = args.n_workers)
+	pred_result = inference.predict(
+		paths = [Path(args.recording_path)], n_workers = args.n_workers,
+		agg_period_days = args.period_days, multi_target_threshold = args.mt_threshold
+	)
+
 	print('\nPrediction result:')
-	print(pred_result.by_rec)
+	print(pred_result.by_brood_periods)
 
 	time_str = datetime.now().isoformat()[:19].replace(':', '-')
 	out_path = Path(args.output_dir).joinpath(f'result__{time_str}')
