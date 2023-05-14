@@ -1,4 +1,4 @@
-name: "Train model"
+name: "Run integration tests"
 
 on: workflow_dispatch
 
