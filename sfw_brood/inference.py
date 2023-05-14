@@ -49,12 +49,13 @@ class Inference:
 
 	@property
 	def classes(self):
-		if 'groups' in self.model.model_info.keys():
-			return self.model.model_info['groups']
-		elif 'classes' in self.model.model_info.keys():
-			return self.model.model_info['classes']
-		else:
-			raise RuntimeError('Invalid model info: no information about classes')
+		try:
+			model_data_config = self.model.model_info['data_config']
+			if 'groups' in model_data_config.keys():
+				return model_data_config['groups']
+			return model_data_config['classes']
+		except KeyError:
+			raise RuntimeError('Invalid model data info: no information about classes')
 
 	def __aggregate_by_brood_periods__(
 			self, pred_df: pd.DataFrame, period_days: int, multi_target_threshold = 0.7, period_map = None
