@@ -62,16 +62,16 @@ jobs:
             -d /home/gardzielb/snowfinch_recordings -c config/data-age-13+-fold-1.json \
             -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t size -p 2 -w 12 \
             /home/gardzielb/snowfinch-recordings.csv
-      - name: Size multiclass age 13+
+      - name: Size binary age 13+
         run: |
           python -m sfw_brood.train \
             -n 1 -a resnet18 -b 64 -l 0.003 -d 5 -t size -e feeding \
-            -c config/data-age-size-groups-13+-fold-1.json -w 12 \
+            -c config/data-age-13+-size-groups-fold-1.json -w 12 \
             --samples-per-class 1000 --age-mode single --age-range 13-30 \
           "$WORK_DIR/out/s5.0-o1.0" "$WORK_DIR/s5-o1/s5.0-o1.0"
           OUT_DIR=$(ls -t _out | grep BS__ | head -n 1)
           python -m sfw_brood.test \
-            -d /home/gardzielb/snowfinch_recordings -c config/data-age-size-groups-13+-fold-1.json.json \
+            -d /home/gardzielb/snowfinch_recordings -c config/data-age-13+-size-groups-fold-1.json \
             -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t size -p 2 -w 12 \
             /home/gardzielb/snowfinch-recordings.csv
       - name: Age single target
