@@ -42,7 +42,10 @@ if __name__ == '__main__':
 			multi_target_threshold = args.mt_threshold
 		)
 	else:
-		validator = BroodSizeInferenceValidator(period_days = args.period_days)
+		validator = BroodSizeInferenceValidator(
+			period_days = args.period_days,
+			size_groups = data_config['groups'] if 'groups' in data_config.keys() else None
+		)
 
 	test_data = pd.read_csv(args.test_data)
 	test_broods = data_config['test'] if 'test' in data_config.keys() else data_config['validation']

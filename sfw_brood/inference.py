@@ -234,6 +234,7 @@ class InferenceValidator(ABC):
 	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list) -> pd.DataFrame:
 		pass
 
+
 # @abstractmethod
 # def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
 # 	pass
@@ -248,16 +249,19 @@ class BroodSizeInferenceValidator(InferenceValidator):
 	# 	return self.__classes__
 
 	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list) -> pd.DataFrame:
-		# if self.size_groups is not None:
-		# 	test_data = group_sizes(test_data, groups = self.size_groups)
-		#
-		size_test_df = test_data.drop(columns = ['age_min', 'age_max', 'datetime'])
+		if self.size_groups is None:
+			size_test_df = test_data.drop(columns = ['age_min', 'age_max', 'datetime'])
 
-		size_test_df['brood_size'] = size_test_df['brood_size'].astype('category')
-		size_test_df['brood_size'] = size_test_df['brood_size'].cat.set_categories(classes)
+			size_test_df['brood_size'] = size_test_df['brood_size'].astype('category')
+			size_test_df['brood_size'] = size_test_df['brood_size'].cat.set_categories(classes)
 
-		size_1hot = pd.get_dummies(size_test_df['brood_size'])
-		size_test_df = pd.concat([size_test_df.drop(columns = 'brood_size'), size_1hot.astype('int')], axis = 1)
+			size_1hot = pd.get_dummies(size_test_df['brood_size'])
+			size_test_df = pd.concat([size_test_df.drop(columns = 'brood_size'), size_1hot.astype('int')], axis = 1)
+		else:
+			size_test_df, _ = group_sizes(
+				test_data.rename(columns = { 'brood_size': 'class' }),
+				groups = self.size_groups
+			)
 
 		agg_map = { 'rec_path': 'count' }
 		for bs in classes:
@@ -270,6 +274,7 @@ class BroodSizeInferenceValidator(InferenceValidator):
 			size_test_agg[bs] = np.where(size_test_agg[bs] / size_test_agg['rec_count'] > 0.8, 1, 0)
 
 		return size_test_agg
+
 
 # def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
 # 	agg_map = { 'rec_path': 'count' }
@@ -298,7 +303,8 @@ class BroodAgeInferenceValidator(InferenceValidator):
 	def __init__(self, period_days: int, age_groups: list[tuple[float, float]], multi_target_threshold = 0.3):
 		super().__init__(period_days, target = 'age', multi_target_threshold = multi_target_threshold)
 		self.age_groups = age_groups
-		# self.__classes__ = label_age_groups(age_groups)
+
+	# self.__classes__ = label_age_groups(age_groups)
 
 	# def _classes_(self) -> list:
 	# 	return self.__classes__
