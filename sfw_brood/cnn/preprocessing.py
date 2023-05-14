@@ -45,14 +45,14 @@ def select_recordings(
 	selector = split_conf['selector']
 	train_idx = np.full(len(data), True)
 
-	if 'test' in split_conf:
+	if 'test' in split_conf.keys():
 		test_idx = data[selector].isin(split_conf['test'])
 		test_df = __format_data__(data[test_idx], audio_path, classes, cls_samples = 'min')
 		train_idx &= ~test_idx
 	else:
 		test_df = None
 
-	if 'validation' in split_conf:
+	if 'validation' in split_conf.keys():
 		val_idx = data[selector].isin(split_conf['validation'])
 		val_df = __format_data__(data[val_idx], audio_path, classes, cls_samples = 'min')
 		train_idx &= ~val_idx
