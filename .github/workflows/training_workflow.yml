@@ -15,6 +15,10 @@ on:
           - vgg11_bn
           - densenet121
           - inception_v3
+          - efficientnet_b0
+          - efficientnet_b4
+          - efficientnet_widese_b0
+          - efficientnet_widese_b4
         default: resnet101
       learning_rate:
         description: Learning rate
