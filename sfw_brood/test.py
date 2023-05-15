@@ -56,6 +56,5 @@ if __name__ == '__main__':
 		inference, test_data,
 		data_root = Path(args.data_root),
 		output = args.out,
-		multi_target = args.target == 'age',
 		n_workers = args.n_workers
 	)

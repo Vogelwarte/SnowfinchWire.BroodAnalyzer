@@ -72,18 +72,18 @@ class Inference:
 		pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
 		pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
 
-		if self.model.model_info['target'] == 'size':
-			for bs in self.classes:
-				pred_agg_df[bs] = pred_agg_df[f'{bs}_n_samples'] / pred_agg_df['n_samples']
-
-			bs_max = pred_agg_df[self.classes].idxmax(axis = 1)
-			for bs in self.classes:
-				pred_agg_df[bs] = np.where(bs_max == bs, 1, 0)
-		else:
-			for age_group in self.classes:
-				pred_agg_df[age_group] = np.where(
-					pred_agg_df[f'{age_group}_n_samples'] / pred_agg_df['n_samples'] > multi_target_threshold, 1, 0
+		if self.model.model_info['multi_target']:
+			for cls in self.classes:
+				pred_agg_df[cls] = np.where(
+					pred_agg_df[f'{cls}_n_samples'] / pred_agg_df['n_samples'] > multi_target_threshold, 1, 0
 				)
+		else:
+			for cls in self.classes:
+				pred_agg_df[cls] = pred_agg_df[f'{cls}_n_samples'] / pred_agg_df['n_samples']
+
+			cls_max = pred_agg_df[self.classes].idxmax(axis = 1)
+			for cls in self.classes:
+				pred_agg_df[cls] = np.where(cls_max == cls, 1, 0)
 
 		return pred_agg_df
 
@@ -192,13 +192,14 @@ class InferenceValidator(ABC):
 
 	def validate_inference(
 			self, inference: Inference, test_data: pd.DataFrame, data_root: Path,
-			output = '', multi_target = False, n_workers = 10
+			output = '', n_workers = 10
 	) -> dict:
+		is_multi_target = inference.model.model_info['multi_target']
 		audio_paths = [data_root.joinpath(path) for path in test_data['rec_path']]
 
 		test_data['datetime'] = pd.to_datetime(test_data['datetime'])
 		test_data, period_map = assign_recording_periods(test_data, period_days = self.period_days)
-		test_data = self._aggregate_test_data_(test_data, inference.classes)
+		test_data = self._aggregate_test_data_(test_data, inference.classes, is_multi_target)
 
 		pred = inference.predict(
 			audio_paths, n_workers, agg_period_days = self.period_days,
@@ -223,7 +224,7 @@ class InferenceValidator(ABC):
 			classes = classes,
 			target_label = f'brood {self.target}',
 			output = output,
-			multi_target = multi_target
+			multi_target = is_multi_target
 		)
 
 	# @abstractmethod
@@ -231,7 +232,7 @@ class InferenceValidator(ABC):
 	# 	pass
 
 	@abstractmethod
-	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list) -> pd.DataFrame:
+	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list, multi_target = False) -> pd.DataFrame:
 		pass
 
 
@@ -248,7 +249,7 @@ class BroodSizeInferenceValidator(InferenceValidator):
 	# def _classes_(self) -> list:
 	# 	return self.__classes__
 
-	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list) -> pd.DataFrame:
+	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list, multi_target = False) -> pd.DataFrame:
 		if self.size_groups is None:
 			size_test_df = test_data.drop(columns = ['age_min', 'age_max', 'datetime'])
 
@@ -309,7 +310,7 @@ class BroodAgeInferenceValidator(InferenceValidator):
 	# def _classes_(self) -> list:
 	# 	return self.__classes__
 
-	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list) -> pd.DataFrame:
+	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list, multi_target = False) -> pd.DataFrame:
 		age_test_df, _ = group_ages(
 			test_data.rename(columns = { 'age_min': 'class_min', 'age_max': 'class_max' }),
 			groups = self.age_groups, multi_target = True
@@ -322,10 +323,15 @@ class BroodAgeInferenceValidator(InferenceValidator):
 		age_test_agg = age_test_df.groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
 		age_test_agg = age_test_agg.rename(columns = { 'rec_path': 'rec_count' })
 
-		for age_group in classes:
-			age_test_agg[age_group] = np.where(
-				age_test_agg[age_group] / age_test_agg['rec_count'] > self.multi_target_threshold, 1, 0
-			)
+		if multi_target:
+			for age_group in classes:
+				age_test_agg[age_group] = np.where(
+					age_test_agg[age_group] / age_test_agg['rec_count'] > self.multi_target_threshold, 1, 0
+				)
+		else:
+			cls_max = age_test_agg[classes].idxmax(axis = 1)
+			for age_group in classes:
+				age_test_agg[age_group] = np.where(cls_max == age_group, 1, 0)
 
 		return age_test_agg
 
