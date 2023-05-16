@@ -10,17 +10,20 @@ from sklearn.metrics import accuracy_score, label_ranking_average_precision_scor
 	ConfusionMatrixDisplay, confusion_matrix
 
 
-def display_confusion_matrix(cm: np.ndarray, title: str, classes: list[str]):
+def display_confusion_matrix(cm: np.ndarray, title: str, classes: list[str], multi_cols = 3):
 	if cm.ndim == 3:
 		n_classes = len(classes)
-		n_cm_cols = min(4, n_classes)
+		n_cm_cols = min(multi_cols, n_classes)
 		n_cm_rows = ceil(n_classes / n_cm_cols)
 		fig, ax = plt.subplots(n_cm_rows, n_cm_cols, figsize = (2 * n_cm_cols, 3 * n_cm_rows))
 
-		for axes, sub_cm, label in zip(ax.flatten(), cm, classes):
+		for sub_cm, label, axes in zip(cm, classes, ax.flatten()):
 			cm_disp = ConfusionMatrixDisplay(normalize_confusion_matrix(sub_cm))
 			cm_disp.plot(ax = axes, colorbar = False)
 			axes.set_title(label)
+
+		for axes in ax.flatten()[cm.shape[0]:]:
+			axes.axis('off')
 
 		fig.tight_layout()
 	else:
@@ -60,14 +63,13 @@ def __aggregate_results__(result_dirs: list[Path], out_dir: Path):
 				classes = summary['classes']
 
 			for key in summary['result'].keys():
-				if key in score_map:
-					score_map[key].append(summary['result'][key])
-				else:
+				if key not in score_map.keys():
 					score_map[key] = []
+				score_map[key].append(summary['result'][key])
 
 	cm_agg /= len(result_dirs)
 	score_agg = { }
-	for key in score_map:
+	for key in score_map.keys():
 		score_agg[f'{key}_mean'] = np.mean(score_map[key])
 		score_agg[f'{key}_std'] = np.std(score_map[key])
 
