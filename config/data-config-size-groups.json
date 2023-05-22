@@ -1,4 +1,5 @@
 {
+  "id": "data-size-groups",
   "size": {
     "selector": "brood_id",
     "validation": ["Furka34_22a", "1_3_1_22"],
