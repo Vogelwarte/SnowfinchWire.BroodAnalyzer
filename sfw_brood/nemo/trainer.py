@@ -91,7 +91,7 @@ class MatchboxNetTrainer(ModelTrainer):
 				'mt_threshold': 0.0
 			}
 		)
-		trained_model.serialize(Path(out_dir).joinpath('matchbox.nemo').as_posix())
+		trained_model.serialize(Path(out_dir).joinpath('model').as_posix())
 
 		return trained_model
 
