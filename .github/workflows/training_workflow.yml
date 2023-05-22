@@ -132,10 +132,9 @@ jobs:
 #          python -m pip install --upgrade pip
 #          pip install Cython
 #          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Use Python from preinstalled virtual environment
-        run: source /home/gardzielb/.virtualenvs/common/bin/activate
       - name: Run training
         run: |
+          source /home/gardzielb/.virtualenvs/common/bin/activate
           python -m sfw_brood.train \
           -n ${{ github.event.inputs.n_epochs }} -a ${{ github.event.inputs.cnn_arch }} \
           -b ${{ github.event.inputs.batch_size }} -l ${{ github.event.inputs.learning_rate }} \
@@ -150,6 +149,7 @@ jobs:
         if: ${{ github.event.inputs.target == 'size' || github.event.inputs.target == 'all' }}
         run: |
           OUT_DIR=$(ls _out | grep BS__)
+          source /home/gardzielb/.virtualenvs/common/bin/activate
           python -m sfw_brood.test \
           -d /home/gardzielb/snowfinch_recordings -c config/${{ github.event.inputs.data_config }} \
           -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t size -p 2 -w 12 \
@@ -158,6 +158,7 @@ jobs:
         if: ${{ github.event.inputs.target == 'age' || github.event.inputs.target == 'all' }}
         run: |
           OUT_DIR=$(ls _out | grep BA__)
+          source /home/gardzielb/.virtualenvs/common/bin/activate
           python -m sfw_brood.test \
           -d /home/gardzielb/snowfinch_recordings -c config/${{ github.event.inputs.data_config }} \
           -m _out/$OUT_DIR/cnn.model.zip -o _out/$OUT_DIR/inference/ -t age -p 2 -w 12 \
