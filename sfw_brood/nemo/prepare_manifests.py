@@ -7,6 +7,7 @@ import librosa
 import pandas as pd
 from tqdm import tqdm
 
+from sfw_brood.nemo.util import make_dataset_path
 from sfw_brood.preprocessing import group_ages, group_sizes
 
 
@@ -98,7 +99,7 @@ def main():
 		data_dir = Path(args.data_dir),
 		data_config = data_config,
 		samples_per_class = args.samples_per_class,
-		out_dir = Path(args.out_path).joinpath(data_config_id).joinpath(args.target)
+		out_dir = make_dataset_path(args.out_path, data_config_id, args.target, args.samples_per_class)
 	)
 
 

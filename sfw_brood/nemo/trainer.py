@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 
 from nemo.collections.asr.models import EncDecClassificationModel
 from nemo.utils.exp_manager import exp_manager
@@ -8,20 +8,24 @@ import pytorch_lightning as pl
 
 from sfw_brood.model import ModelTrainer, classes_from_data_config
 from sfw_brood.nemo.model import SnowfinchBroodMatchboxNet
+from sfw_brood.nemo.util import make_dataset_path
 from sfw_brood.nemo.validator import MatchboxNetValidator
 
 
 class MatchboxNetTrainer(ModelTrainer):
 	def __init__(
 			self, dataset_path: str, audio_path: str, data_config: dict, sample_duration: float,
-			n_epochs: int, n_workers = 12, batch_size = 128, learn_rate = 0.05,
+			n_epochs: int, n_workers = 12, batch_size = 128, learn_rate = 0.05, samples_per_class = 10_000,
 			age_range: Optional[Tuple[float, float]] = None
 	):
 		self.data_config = data_config
 		self.age_range = age_range
 		self.audio_path = audio_path
+		self.dataset_root = Path(dataset_path)
 		self.sample_duration = sample_duration
-		self.dataset_path = Path(dataset_path).joinpath('nemo').joinpath(data_config['id'])
+		self.samples_per_class = samples_per_class
+		if self.samples_per_class not in ['min', 'mean', 'max']:
+			self.samples_per_class = int(self.samples_per_class)
 
 		self.config = OmegaConf.load('config/matchboxnet-sfw-brood.yaml')
 		self.config.trainer.devices = 1
@@ -57,9 +61,12 @@ class MatchboxNetTrainer(ModelTrainer):
 		config = OmegaConf.to_container(config, resolve = True)
 		config = OmegaConf.create(config)
 
-		config.model.train_ds.manifest_filepath = self.__dataset_path__(target, 'train')
-		config.model.validation_ds.manifest_filepath = self.__dataset_path__(target, 'validation')
-		config.model.test_ds.manifest_filepath = self.__dataset_path__(target, 'test')
+		dataset_path = make_dataset_path(
+			self.dataset_root, self.data_config['id'], target, self.samples_per_class, self.age_range
+		)
+		config.model.train_ds.manifest_filepath = self.__manifest_path__(dataset_path, 'train')
+		config.model.validation_ds.manifest_filepath = self.__manifest_path__(dataset_path, 'validation')
+		config.model.test_ds.manifest_filepath = self.__manifest_path__(dataset_path, 'test')
 
 		trainer = pl.Trainer(**config.trainer)
 		exp_dir = exp_manager(trainer, config.get('exp_manager', None))
@@ -75,8 +82,9 @@ class MatchboxNetTrainer(ModelTrainer):
 				'learning_rate': config.model.lr,
 				'batch_size': config.model.batch_size,
 				'sample_duration': self.sample_duration,
+				'samples_per_class': self.samples_per_class,
 				'train_epochs': trainer.current_epoch,
-				'dataset': self.dataset_path.as_posix(),
+				'dataset': dataset_path.as_posix(),
 				'data_config': self.data_config[target],
 				'age_range': self.age_range,
 				'multi_target': False,
@@ -87,5 +95,5 @@ class MatchboxNetTrainer(ModelTrainer):
 
 		return trained_model
 
-	def __dataset_path__(self, target: str, dataset_id: str) -> str:
-		return self.dataset_path.joinpath(target).joinpath(f'{dataset_id}_manifest.json').as_posix()
+	def __manifest_path__(self, dataset_root: Path, dataset_id: str) -> str:
+		return dataset_root.joinpath(f'{dataset_id}_manifest.json').as_posix()

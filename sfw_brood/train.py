@@ -68,7 +68,8 @@ if __name__ == '__main__':
 			n_epochs = args.n_epochs,
 			n_workers = args.n_workers,
 			batch_size = args.batch_size,
-			learn_rate = args.learning_rate
+			learn_rate = args.learning_rate,
+			samples_per_class = args.samples_per_class
 		)
 	else:
 		trainer = CNNTrainer(
