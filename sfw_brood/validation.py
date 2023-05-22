@@ -1,7 +1,7 @@
 import json
 from math import ceil
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score, label_ranking_average_precision_scor
 	ConfusionMatrixDisplay, confusion_matrix
 
 
-def display_confusion_matrix(cm: np.ndarray, title: str, classes: list[str], multi_cols = 3):
+def display_confusion_matrix(cm: np.ndarray, title: str, classes: List[str], multi_cols = 3):
 	if cm.ndim == 3:
 		n_classes = len(classes)
 		n_cm_cols = min(multi_cols, n_classes)
@@ -35,7 +35,7 @@ def display_confusion_matrix(cm: np.ndarray, title: str, classes: list[str], mul
 		fix.tight_layout()
 
 
-def __aggregate_results__(result_dirs: list[Path], out_dir: Path):
+def __aggregate_results__(result_dirs: List[Path], out_dir: Path):
 	clf_title = None
 	classes = None
 	cm_agg = None
@@ -83,7 +83,7 @@ def __aggregate_results__(result_dirs: list[Path], out_dir: Path):
 
 
 def save_results(
-		target: str, classes: list[str], scores: dict, cm: np.ndarray, out_dir: Union[Path, str],
+		target: str, classes: List[str], scores: dict, cm: np.ndarray, out_dir: Union[Path, str],
 		extra_info: Optional[dict] = None
 ):
 	out_path = Path(out_dir)
@@ -105,7 +105,7 @@ def save_results(
 		json.dump(summary, result_file, indent = 4)
 
 
-def aggregate_results(result_dirs: list[Union[str, Path]], out_dir: Union[str, Path]):
+def aggregate_results(result_dirs: List[Union[str, Path]], out_dir: Union[str, Path]):
 	out_dir = Path(out_dir)
 	result_dirs = [Path(path) for path in result_dirs]
 

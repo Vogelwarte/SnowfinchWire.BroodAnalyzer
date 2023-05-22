@@ -5,6 +5,7 @@ from pathlib import Path
 
 from sfw_brood.cnn.model import CNNLoader
 from sfw_brood.inference import Inference
+from sfw_brood.nemo.model import MatchboxNetLoader
 
 warnings.simplefilter(action = 'ignore', category = FutureWarning)
 
@@ -19,8 +20,9 @@ def main():
 	arg_parser.add_argument('--mt-threshold', type = float, default = 0.5)
 	args = arg_parser.parse_args()
 
-	cnn_loader = CNNLoader()
-	model = cnn_loader.load_model(args.model)
+	model_loader = CNNLoader()
+	model_loader.set_next(MatchboxNetLoader())
+	model = model_loader.load_model(args.model)
 	inference = Inference(model)
 
 	pred_result = inference.predict(

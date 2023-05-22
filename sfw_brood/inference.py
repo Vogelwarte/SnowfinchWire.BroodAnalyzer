@@ -2,14 +2,14 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 from sfw_brood.common.preprocessing.io import read_audacity_labels
-from sfw_brood.model import SnowfinchBroodClassifier
+from sfw_brood.model import SnowfinchBroodClassifier, classes_from_data_config
 from sfw_brood.preprocessing import group_ages, label_class_groups, group_sizes
 from sfw_brood.validation import generate_validation_results
 
@@ -31,14 +31,7 @@ class SnowfinchBroodPrediction:
 class Inference:
 	def __init__(self, model: SnowfinchBroodClassifier):
 		self.model = model
-		try:
-			model_data_config = self.model.model_info['data_config']
-			if 'groups' in model_data_config.keys():
-				self.classes = label_class_groups(model_data_config['groups'])
-			else:
-				self.classes = model_data_config['classes']
-		except KeyError:
-			raise RuntimeError('Invalid model data info: no information about classes')
+		self.classes = classes_from_data_config(self.model.model_info['data_config'])
 
 	def predict(
 			self, paths: List[Path], n_workers: int, agg_period_days: int,
@@ -131,7 +124,7 @@ class Inference:
 			int(rec_name[9:11]), int(rec_name[11:13]), int(rec_name[13:15])
 		)
 
-	def __format_predictions__(self, pred_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+	def __format_predictions__(self, pred_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
 		classes = [col for col in pred_df.columns if col not in ['start_time', 'end_time', 'file']]
 		pred_df['predicted_class'] = pred_df[classes].idxmax(axis = 1)
 		pred_df['duration'] = pred_df['end_time'] - pred_df['start_time']
@@ -161,7 +154,7 @@ class Inference:
 
 def assign_recording_periods(
 		rec_df: pd.DataFrame, period_days: int, period_map: Optional[dict] = None
-) -> tuple[pd.DataFrame, dict]:
+) -> Tuple[pd.DataFrame, dict]:
 	def calculate_period_start(rec_time, min_date):
 		period_offset = (rec_time.date() - min_date).days // period_days
 		return min_date + timedelta(days = period_days * period_offset)
@@ -206,9 +199,6 @@ class InferenceValidator(ABC):
 			period_map = period_map, multi_target_threshold = self.multi_target_threshold
 		)
 		pred_df = pred.by_brood_periods.set_index(['brood_id', 'period_start'])
-		# pred.by_rec['datetime'] = pd.to_datetime(pred.by_rec['datetime'])
-		# pred_df, _ = assign_recording_periods(pred.by_rec, period_days = self.period_days, period_map = period_map)
-		# pred_df = self._aggregate_predictions_(pred_df).set_index(['brood_id', 'period_start'])
 
 		if output:
 			out_path = Path(output)
@@ -227,27 +217,15 @@ class InferenceValidator(ABC):
 			multi_target = is_multi_target
 		)
 
-	# @abstractmethod
-	# def _classes_(self) -> list:
-	# 	pass
-
 	@abstractmethod
 	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list, multi_target = False) -> pd.DataFrame:
 		pass
 
 
-# @abstractmethod
-# def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
-# 	pass
-
-
 class BroodSizeInferenceValidator(InferenceValidator):
-	def __init__(self, period_days: int, size_groups: Optional[list[tuple[float, float]]] = None):
+	def __init__(self, period_days: int, size_groups: Optional[List[Tuple[float, float]]] = None):
 		super().__init__(period_days, target = 'size', multi_target_threshold = 0.0)
 		self.size_groups = size_groups
-
-	# def _classes_(self) -> list:
-	# 	return self.__classes__
 
 	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list, multi_target = False) -> pd.DataFrame:
 		if self.size_groups is None:
@@ -277,38 +255,10 @@ class BroodSizeInferenceValidator(InferenceValidator):
 		return size_test_agg
 
 
-# def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
-# 	agg_map = { 'rec_path': 'count' }
-# 	test_cols = ['rec_path', 'brood_id', 'period_start']
-#
-# 	for col in pred_df.columns:
-# 		if 'n_samples' in col:
-# 			test_cols.append(col)
-# 			agg_map[col] = 'sum'
-#
-# 	pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
-# 	pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
-#
-# 	classes = self._classes_()
-# 	for bs in classes:
-# 		pred_agg_df[bs] = pred_agg_df[f'{bs}_n_samples'] / pred_agg_df['n_samples']
-#
-# 	bs_max = pred_agg_df[classes].idxmax(axis = 1)
-# 	for bs in classes:
-# 		pred_agg_df[bs] = np.where(bs_max == bs, 1, 0)
-#
-# 	return pred_agg_df
-
-
 class BroodAgeInferenceValidator(InferenceValidator):
-	def __init__(self, period_days: int, age_groups: list[tuple[float, float]], multi_target_threshold = 0.3):
+	def __init__(self, period_days: int, age_groups: List[Tuple[float, float]], multi_target_threshold = 0.3):
 		super().__init__(period_days, target = 'age', multi_target_threshold = multi_target_threshold)
 		self.age_groups = age_groups
-
-	# self.__classes__ = label_age_groups(age_groups)
-
-	# def _classes_(self) -> list:
-	# 	return self.__classes__
 
 	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list, multi_target = False) -> pd.DataFrame:
 		age_test_df, _ = group_ages(
@@ -334,22 +284,3 @@ class BroodAgeInferenceValidator(InferenceValidator):
 				age_test_agg[age_group] = np.where(cls_max == age_group, 1, 0)
 
 		return age_test_agg
-
-# def _aggregate_predictions_(self, pred_df: pd.DataFrame) -> pd.DataFrame:
-# 	agg_map = { 'rec_path': 'count' }
-# 	test_cols = ['rec_path', 'brood_id', 'period_start']
-#
-# 	for col in pred_df.columns:
-# 		if 'n_samples' in col:
-# 			test_cols.append(col)
-# 			agg_map[col] = 'sum'
-#
-# 	pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
-# 	pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
-#
-# 	for age_group in self._classes_():
-# 		pred_agg_df[age_group] = np.where(
-# 			pred_agg_df[f'{age_group}_n_samples'] / pred_agg_df['n_samples'] > self.multi_target_threshold, 1, 0
-# 		)
-#
-# 	return pred_agg_df

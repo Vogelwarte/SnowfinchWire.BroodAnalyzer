@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import pandas as pd
 from opensoundscape.torch.models.cnn import CNN, InceptionV3, load_model, use_resample_loss
@@ -18,10 +18,8 @@ class CNNTrainer(ModelTrainer):
 			sample_duration_sec: float, rec_split: dict,
 			cnn_arch: str, n_epochs: int, n_workers = 12, batch_size = 100, learn_rate = 0.001,
 			target_label: Optional[str] = None, remove_silence: bool = True,
-			# age_groups: Optional[list[tuple[float, float]]] = None,
-			# size_groups: Optional[list[tuple[float, float]]] = None,
 			samples_per_class = 'min', age_multi_target = False, age_mt_threshold = 0.7,
-			age_range: Optional[tuple[float, float]] = None
+			age_range: Optional[Tuple[float, float]] = None
 	):
 		self.cnn_arch = cnn_arch
 		self.n_epochs = n_epochs

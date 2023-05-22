@@ -1,5 +1,4 @@
-import warnings
-from typing import Union
+from typing import Union, List
 
 import pandas as pd
 from opensoundscape.torch.models.cnn import CNN, load_model
@@ -15,7 +14,7 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 		self.multi_target = model_info['multi_target'] if 'multi_target' in model_info.keys() else False
 		self.mt_threshold = model_info['mt_threshold'] if 'mt_threshold' in model_info else 0.7
 
-	def predict(self, recordings: Union[list[str], pd.DataFrame], n_workers: int = 12) -> pd.DataFrame:
+	def predict(self, recordings: Union[List[str], pd.DataFrame], n_workers: int = 12) -> pd.DataFrame:
 		activation = 'sigmoid' if self.multi_target else 'softmax'
 		pred_result = self.cnn.predict(
 			recordings, activation_layer = activation, num_workers = n_workers, batch_size = 64

@@ -1,11 +1,11 @@
-from typing import Optional
+from typing import Optional, List, Tuple
 
 import pandas as pd
 import numpy as np
 from opensoundscape.data_selection import resample
 
 
-def balance_data(data: pd.DataFrame, classes: list[str], samples_per_class: str) -> pd.DataFrame:
+def balance_data(data: pd.DataFrame, classes: List[str], samples_per_class: str) -> pd.DataFrame:
 	class_samples = [np.count_nonzero(data[cls]) for cls in classes]
 
 	if samples_per_class == 'min':
@@ -19,7 +19,7 @@ def balance_data(data: pd.DataFrame, classes: list[str], samples_per_class: str)
 
 
 def __format_data__(
-		data: pd.DataFrame, audio_path: str, classes: list[str], cls_samples: Optional[str] = None
+		data: pd.DataFrame, audio_path: str, classes: List[str], cls_samples: Optional[str] = None
 ) -> pd.DataFrame:
 	data['file'] = audio_path + '/' + data['file']
 	data = data.set_index('file')
@@ -31,8 +31,8 @@ def __format_data__(
 
 def select_recordings(
 		data: pd.DataFrame, audio_path: str, cls_samples: str, split_conf: dict,
-		classes: Optional[list[str]] = None
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+		classes: Optional[List[str]] = None
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 	if classes is None:
 		if 'classes' in split_conf.keys() and 'class' in data.columns:
 			classes = [str(cls) for cls in split_conf['classes']]

@@ -3,18 +3,20 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
+import librosa
 import pandas as pd
 from tqdm import tqdm
 
-from sfw_brood.preprocessing import group_ages
+from sfw_brood.preprocessing import group_ages, group_sizes
 
 
 def create_dataset_manifest(dataset_id: str, data: pd.DataFrame, data_dir: Path, out_dir: Path):
 	with open(out_dir.joinpath(f'{dataset_id}_manifest.json'), mode = 'wt') as manifest:
 		for _, row in tqdm(data.iterrows(), total = data.shape[0], desc = dataset_id):
+			audio_path = data_dir.joinpath(row['file'])
 			row_json = {
-				'audio_filepath': data_dir.joinpath(row['file']).as_posix(),
-				'duration': 0.0,
+				'audio_filepath': audio_path.as_posix(),
+				'duration': librosa.core.get_duration(path = audio_path),
 				'command': row['class']
 			}
 			manifest.write(f'{json.dumps(row_json)}\n')
@@ -80,19 +82,25 @@ def main():
 	args = arg_parser.parse_args()
 
 	with open(args.data_config_path) as data_conf_file:
-		data_config = json.load(data_conf_file)[args.target]
+		data_config = json.load(data_conf_file)
+		data_config_id = data_config['id']
+		data_config = data_config[args.target]
 
-	data = pd.read_csv(args.in_path, dtype = {'class': str})
-	if args.target == 'BA' and 'groups' in data_config.keys():
-		data, _ = group_ages(data, groups = data_config['groups'])
+	data = pd.read_csv(args.in_path, dtype = { 'class': str })
+	if 'groups' in data_config.keys():
+		if args.target == 'age':
+			data, _ = group_ages(data, groups = data_config['groups'])
+		else:
+			data, _ = group_sizes(data, groups = data_config['groups'])
 
 	prepare_manifests(
 		data = data,
 		data_dir = Path(args.data_dir),
 		data_config = data_config,
 		samples_per_class = args.samples_per_class,
-		out_dir = Path(args.out_path)
+		out_dir = Path(args.out_path).joinpath(data_config_id).joinpath(args.target)
 	)
+
 
 if __name__ == '__main__':
 	main()

@@ -8,6 +8,7 @@ import pandas as pd
 
 from sfw_brood.cnn.model import CNNLoader
 from sfw_brood.inference import Inference, BroodAgeInferenceValidator, BroodSizeInferenceValidator
+from sfw_brood.nemo.model import MatchboxNetLoader
 
 warnings.simplefilter(action = 'ignore')
 os.environ['PYTHONWARNINGS'] = 'ignore'
@@ -27,8 +28,10 @@ if __name__ == '__main__':
 
 	print(f'Inference test script launched with args: {args}')
 
-	cnn_loader = CNNLoader()
-	model = cnn_loader.load_model(args.model)
+	model_loader = CNNLoader()
+	model_loader.set_next(MatchboxNetLoader())
+
+	model = model_loader.load_model(args.model)
 	print(f'Loaded trained model: {model.model_info}')
 	inference = Inference(model)
 

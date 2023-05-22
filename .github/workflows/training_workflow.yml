@@ -19,6 +19,7 @@ on:
           - efficientnet_b4
           - efficientnet_widese_b0
           - efficientnet_widese_b4
+          - matchboxnet
         default: resnet101
       learning_rate:
         description: Learning rate

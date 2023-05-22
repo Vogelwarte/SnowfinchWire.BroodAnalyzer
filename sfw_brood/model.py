@@ -3,13 +3,16 @@ import zipfile
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import pandas as pd
+
+from sfw_brood.preprocessing import label_class_groups
 
 
 class ModelType(Enum):
 	CNN = 0
+	MATCHBOX = 1
 
 
 class SnowfinchBroodClassifier(ABC):
@@ -18,7 +21,7 @@ class SnowfinchBroodClassifier(ABC):
 		self.model_info = model_info
 
 	@abstractmethod
-	def predict(self, recordings: Union[pd.DataFrame, list[str]], n_workers: int) -> pd.DataFrame:
+	def predict(self, recordings: Union[pd.DataFrame, List[str]], n_workers: int) -> pd.DataFrame:
 		pass
 
 	def serialize(self, path: str):
@@ -94,3 +97,11 @@ class ModelValidator(ABC):
 	@abstractmethod
 	def validate(self, model: SnowfinchBroodClassifier, output = '', multi_target = False) -> dict:
 		pass
+
+
+def classes_from_data_config(data_config: dict) -> List[str]:
+	if 'groups' in data_config:
+		return label_class_groups(data_config['groups'])
+	elif 'classes' in data_config:
+		return [str(cls) for cls in data_config['classes']]
+	raise RuntimeError('Invalid data config, no classes included')

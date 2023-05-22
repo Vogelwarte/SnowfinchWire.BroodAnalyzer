@@ -1,4 +1,4 @@
-name: &name "MatchboxNet-sfw-brood-age"
+name: &name "MatchboxNet-sfw-brood-size"
 
 model:
   sample_rate: 48000
@@ -6,19 +6,20 @@ model:
   repeat: 1
   dropout: 0.0
   kernel_size_factor: 1.0
+  lr: 0.05
+  batch_size: 128
+  num_workers: 12
 
-  labels_full: ['00.0-05.5', '06.0-08.5', '09.0-11.5', '12.0-14.5', '15.0-30.0']
-  labels_subset: ['00.0-05.5', '06.0-08.5', '09.0-11.5', '12.0-14.5', '15.0-30.0']
-
-  labels: ${model.labels_full}
+  labels_full: ${model.labels}
+  labels_subset: ${model.labels}
 
   train_ds:
     manifest_filepath: ???
     sample_rate: ${model.sample_rate}
     labels: ${model.labels}
-    batch_size: 128
+    batch_size: ${model.batch_size}
     shuffle: True
-    num_workers: 8
+    num_workers: ${model.num_workers}
     pin_memory: true
     # tarred datasets
     is_tarred: false
@@ -42,9 +43,9 @@ model:
     manifest_filepath: ???
     sample_rate: ${model.sample_rate}
     labels: ${model.labels}
-    batch_size: 128
+    batch_size: ${model.batch_size}
     shuffle: False
-    num_workers: 8
+    num_workers: ${model.num_workers}
     pin_memory: true
     val_loss_idx: 0
 
@@ -52,9 +53,9 @@ model:
     manifest_filepath: null
     sample_rate: ${model.sample_rate}
     labels: ${model.labels}
-    batch_size: 128
+    batch_size: ${model.batch_size}
     shuffle: False
-    num_workers: 8
+    num_workers: ${model.num_workers}
     pin_memory: true
     test_loss_idx: 0
 
@@ -155,7 +156,7 @@ model:
   optim:
     name: novograd
     # _target_: nemo.core.optim.optimizers.Novograd
-    lr: 0.05
+    lr: ${model.lr}
     # optimizer arguments
     betas: [0.95, 0.5]
     weight_decay: 0.001
