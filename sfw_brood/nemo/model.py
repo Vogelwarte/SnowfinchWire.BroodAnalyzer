@@ -96,7 +96,8 @@ class SnowfinchBroodMatchboxNet(SnowfinchBroodClassifier):
 			logits = self.network(input_signal = input_signal, input_signal_length = signal_length)
 			_, pred = logits.topk(1, dim = 1, largest = True, sorted = True)
 			pred = pred.squeeze()
-			predictions.extend(pred)
+			if len(pred) > 0:
+				predictions.extend(pred)
 		return Tensor(predictions)
 
 	def _serialize_(self, path: str):
