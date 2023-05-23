@@ -96,7 +96,7 @@ class Inference:
 		samples_df = pd.DataFrame()
 
 		for rec_path in tqdm(rec_paths):
-			labels_file = next(Path(rec_path.parent).glob(f'*{rec_path.stem}*.txt'), None)
+			labels_file = next(Path(rec_path.parent).glob(f'predicted_{rec_path.stem}*.txt'), None)
 			if not labels_file:
 				continue
 
