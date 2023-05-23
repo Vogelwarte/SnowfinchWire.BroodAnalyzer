@@ -96,7 +96,7 @@ class SnowfinchBroodMatchboxNet(SnowfinchBroodClassifier):
 			logits = self.network(input_signal = input_signal, input_signal_length = signal_length)
 			_, pred = logits.topk(1, dim = 1, largest = True, sorted = True)
 			pred = pred.squeeze()
-			if len(pred) > 0:
+			if pred.dim() == 1:
 				predictions.extend(pred)
 		return Tensor(predictions)
 
