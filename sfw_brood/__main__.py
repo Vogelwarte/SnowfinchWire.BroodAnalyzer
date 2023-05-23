@@ -16,7 +16,8 @@ def main():
 	arg_parser.add_argument('-m', '--model', type = str, help = 'Path to serialized model')
 	arg_parser.add_argument('-o', '--output-dir', type = str, default = '_out')
 	arg_parser.add_argument('-w', '--n-workers', type = int, default = 10)
-	arg_parser.add_argument('-p', '--period-days', type = int, default = 2)
+	arg_parser.add_argument('-p', '--period-hours', type = int, default = 2)
+	arg_parser.add_argument('--overlap-hours', type = int, default = 0)
 	arg_parser.add_argument('--mt-threshold', type = float, default = 0.5)
 	args = arg_parser.parse_args()
 
@@ -27,7 +28,8 @@ def main():
 
 	pred_result = inference.predict(
 		paths = [Path(args.recording_path)], n_workers = args.n_workers,
-		agg_period_days = args.period_days, multi_target_threshold = args.mt_threshold
+		agg_period_hours = args.period_hours, overlap_hours = args.overlap_hours,
+		multi_target_threshold = args.mt_threshold
 	)
 
 	print('\nPrediction result:')

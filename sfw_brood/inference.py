@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from pathlib import Path
 from typing import Union, List, Optional, Tuple
 
@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from sfw_brood.common.preprocessing.io import read_audacity_labels
 from sfw_brood.model import SnowfinchBroodClassifier, classes_from_data_config
-from sfw_brood.preprocessing import group_ages, label_class_groups, group_sizes
+from sfw_brood.preprocessing import group_ages, group_sizes
 from sfw_brood.validation import generate_validation_results
 
 
@@ -34,8 +34,8 @@ class Inference:
 		self.classes = classes_from_data_config(self.model.model_info['data_config'])
 
 	def predict(
-			self, paths: List[Path], n_workers: int, agg_period_days: int,
-			multi_target_threshold = 0.7, period_map = None
+			self, paths: List[Path], n_workers: int, agg_period_hours: int,
+			overlap_hours = 0, multi_target_threshold = 0.7, period_map = None
 	) -> SnowfinchBroodPrediction:
 		samples_df = self.__prepare_data__(paths)
 		print(f'Running predictions for {len(samples_df)} samples:')
@@ -44,15 +44,20 @@ class Inference:
 		pred_df.to_csv('_inference-pred.csv')
 		pred_df, agg_df = self.__format_predictions__(pred_df)
 		brood_period_agg_df = self.__aggregate_by_brood_periods__(
-			agg_df, agg_period_days, multi_target_threshold, period_map
+			agg_df, agg_period_hours, overlap_hours, multi_target_threshold, period_map
 		)
 		return SnowfinchBroodPrediction(pred_df, agg_df, brood_period_agg_df)
 
 	def __aggregate_by_brood_periods__(
-			self, pred_df: pd.DataFrame, period_days: int, multi_target_threshold = 0.7, period_map = None
+			self, pred_df: pd.DataFrame, period_hours: int, overlap_hours = 0,
+			multi_target_threshold = 0.7, period_map = None
 	) -> pd.DataFrame:
 		pred_df['datetime'] = pd.to_datetime(pred_df['datetime'])
-		pred_df, _ = assign_recording_periods(pred_df, period_days = period_days, period_map = period_map)
+		pred_df, _ = assign_recording_periods(
+			pred_df, period_hours, overlap_hours = overlap_hours, period_map = period_map
+		)
+
+		print(pred_df[['rec_path', 'brood_id', 'datetime', 'period_start', 'n_samples']])
 
 		agg_map = { 'rec_path': 'count' }
 		test_cols = ['rec_path', 'brood_id', 'period_start']
@@ -152,12 +157,20 @@ class Inference:
 		return pred_df, agg_df
 
 
+def __timedelta_from_hours__(hours: int) -> timedelta:
+	return timedelta(days = hours // 24, hours = hours % 24)
+
+
+def __timedelta_to_hours__(td: timedelta) -> int:
+	return td.days * 24 + td.seconds // 3600
+
+
 def assign_recording_periods(
-		rec_df: pd.DataFrame, period_days: int, period_map: Optional[dict] = None
+		rec_df: pd.DataFrame, period_hours: int, period_map: Optional[dict] = None, overlap_hours = 0
 ) -> Tuple[pd.DataFrame, dict]:
 	def calculate_period_start(rec_time, min_date):
-		period_offset = (rec_time.date() - min_date).days // period_days
-		return min_date + timedelta(days = period_days * period_offset)
+		period_offset = __timedelta_to_hours__(rec_time - min_date) // period_hours
+		return min_date + __timedelta_from_hours__(period_hours * period_offset)
 
 	period_df = pd.DataFrame()
 	period_map_out = { }
@@ -166,20 +179,31 @@ def assign_recording_periods(
 		brood_df = rec_df[rec_df['brood_id'] == brood]
 
 		if period_map and brood in period_map.keys():
-			period_start = period_map[brood]
+			period_starts = period_map[brood]
 		else:
-			period_start = brood_df['datetime'].min().date()
+			min_datetime = brood_df['datetime'].min()
+			base_hour = (min_datetime.hour // period_hours) * period_hours if period_hours <= 12 else 0
+			base_period_start = datetime.combine(min_datetime.date(), time(base_hour))
+			period_starts = [base_period_start]
+			if overlap_hours > 0:
+				period_starts.append(base_period_start + __timedelta_from_hours__(period_hours - overlap_hours))
 
-		period_map_out[brood] = period_start
-		brood_df['period_start'] = brood_df['datetime'].apply(lambda dt: calculate_period_start(dt, period_start))
-		period_df = pd.concat([period_df, brood_df])
+		period_map_out[brood] = period_starts
+
+		for period_start in period_starts:
+			brood_period_df = brood_df[brood_df['datetime'] >= period_start]
+			brood_period_df['period_start'] = brood_period_df['datetime'].apply(
+				lambda dt: calculate_period_start(dt, period_start)
+			)
+			period_df = pd.concat([period_df, brood_period_df])
 
 	return period_df, period_map_out
 
 
 class InferenceValidator(ABC):
-	def __init__(self, period_days: int, target: str, multi_target_threshold: float):
-		self.period_days = period_days
+	def __init__(self, period_hours: int, overlap_hours: int, target: str, multi_target_threshold: float):
+		self.period_hours = period_hours
+		self.overlap_hours = overlap_hours
 		self.target = target
 		self.multi_target_threshold = multi_target_threshold
 
@@ -191,11 +215,13 @@ class InferenceValidator(ABC):
 		audio_paths = [data_root.joinpath(path) for path in test_data['rec_path']]
 
 		test_data['datetime'] = pd.to_datetime(test_data['datetime'])
-		test_data, period_map = assign_recording_periods(test_data, period_days = self.period_days)
+		test_data, period_map = assign_recording_periods(
+			test_data, period_hours = self.period_hours, overlap_hours = self.overlap_hours
+		)
 		test_data = self._aggregate_test_data_(test_data, inference.classes, is_multi_target)
 
 		pred = inference.predict(
-			audio_paths, n_workers, agg_period_days = self.period_days,
+			audio_paths, n_workers, agg_period_hours = self.period_hours, overlap_hours = self.overlap_hours,
 			period_map = period_map, multi_target_threshold = self.multi_target_threshold
 		)
 		pred_df = pred.by_brood_periods.set_index(['brood_id', 'period_start'])
@@ -223,8 +249,8 @@ class InferenceValidator(ABC):
 
 
 class BroodSizeInferenceValidator(InferenceValidator):
-	def __init__(self, period_days: int, size_groups: Optional[List[Tuple[float, float]]] = None):
-		super().__init__(period_days, target = 'size', multi_target_threshold = 0.0)
+	def __init__(self, period_hours: int, overlap_hours: int, size_groups: Optional[List[Tuple[float, float]]] = None):
+		super().__init__(period_hours, overlap_hours, target = 'size', multi_target_threshold = 0.0)
 		self.size_groups = size_groups
 
 	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list, multi_target = False) -> pd.DataFrame:
@@ -256,8 +282,11 @@ class BroodSizeInferenceValidator(InferenceValidator):
 
 
 class BroodAgeInferenceValidator(InferenceValidator):
-	def __init__(self, period_days: int, age_groups: List[Tuple[float, float]], multi_target_threshold = 0.3):
-		super().__init__(period_days, target = 'age', multi_target_threshold = multi_target_threshold)
+	def __init__(
+			self, period_hours: int, overlap_hours: int,
+			age_groups: List[Tuple[float, float]], multi_target_threshold = 0.3
+	):
+		super().__init__(period_hours, overlap_hours, target = 'age', multi_target_threshold = multi_target_threshold)
 		self.age_groups = age_groups
 
 	def _aggregate_test_data_(self, test_data: pd.DataFrame, classes: list, multi_target = False) -> pd.DataFrame:

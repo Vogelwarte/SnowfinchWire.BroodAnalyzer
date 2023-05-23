@@ -152,7 +152,7 @@ jobs:
           source /home/gardzielb/.virtualenvs/common/bin/activate
           python -m sfw_brood.test \
           -d /home/gardzielb/snowfinch_recordings -c config/${{ github.event.inputs.data_config }} \
-          -m _out/$OUT_DIR/model.zip -o _out/$OUT_DIR/inference/ -t size -p 2 -w 12 \
+          -m _out/$OUT_DIR/model.zip -o _out/$OUT_DIR/inference/ -t size -p 48 --overlap-hours 24 -w 12 \
           /home/gardzielb/snowfinch-recordings.csv
       - name: Test age model inference
         if: ${{ github.event.inputs.target == 'age' || github.event.inputs.target == 'all' }}
@@ -161,7 +161,7 @@ jobs:
           source /home/gardzielb/.virtualenvs/common/bin/activate
           python -m sfw_brood.test \
           -d /home/gardzielb/snowfinch_recordings -c config/${{ github.event.inputs.data_config }} \
-          -m _out/$OUT_DIR/model.zip -o _out/$OUT_DIR/inference/ -t age -p 2 -w 12 \
+          -m _out/$OUT_DIR/model.zip -o _out/$OUT_DIR/inference/ -t age -p 12 -w 12 \
           /home/gardzielb/snowfinch-recordings.csv
       - name: Explore results directory
         run: tree -I '*venv*|lightning_logs|nemo_experiments' --matchdirs .

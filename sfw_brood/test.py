@@ -21,8 +21,9 @@ if __name__ == '__main__':
 	arg_parser.add_argument('-m', '--model', type = str)
 	arg_parser.add_argument('-o', '--out', type = str)
 	arg_parser.add_argument('-t', '--target', type = str, choices = ['age', 'size'])
-	arg_parser.add_argument('-p', '--period-days', type = int, default = 2)
+	arg_parser.add_argument('-p', '--period-hours', type = int, default = 2)
 	arg_parser.add_argument('-w', '--n-workers', type = int, default = 10)
+	arg_parser.add_argument('--overlap-hours', type = int, default = 0)
 	arg_parser.add_argument('--mt-threshold', type = float, default = 0.5)
 	args = arg_parser.parse_args()
 
@@ -40,13 +41,15 @@ if __name__ == '__main__':
 
 	if args.target == 'age':
 		validator = BroodAgeInferenceValidator(
-			period_days = args.period_days,
+			period_hours = args.period_hours,
+			overlap_hours = args.overlap_hours,
 			age_groups = data_config['groups'],
 			multi_target_threshold = args.mt_threshold
 		)
 	else:
 		validator = BroodSizeInferenceValidator(
-			period_days = args.period_days,
+			period_hours = args.period_hours,
+			overlap_hours = args.overlap_hours,
 			size_groups = data_config['groups'] if 'groups' in data_config.keys() else None
 		)
 
