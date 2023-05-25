@@ -6,6 +6,8 @@ from typing import Union, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from sfw_brood.common.preprocessing.io import read_audacity_labels
@@ -16,16 +18,59 @@ from sfw_brood.validation import generate_validation_results
 
 @dataclass
 class SnowfinchBroodPrediction:
-	raw: pd.DataFrame
-	by_rec: pd.DataFrame
-	by_brood_periods: pd.DataFrame
+	target: str
+	classes: List[str]
+	sample_results: pd.DataFrame
+	rec_results: pd.DataFrame
+	brood_periods_results: pd.DataFrame
 
 	def save(self, out: Union[Path, str]):
 		out = Path(out)
 		out.mkdir(parents = True, exist_ok = True)
-		self.raw.to_csv(out.joinpath('sample-preds.csv'), index = False)
-		self.by_rec.to_csv(out.joinpath('rec-preds.csv'), index = False)
-		self.by_brood_periods.to_csv(out.joinpath('brood-period-preds.csv'), index = False)
+		self.sample_results.to_csv(out.joinpath('sample-preds.csv'), index = False)
+		self.rec_results.sort_values(by = ['brood_id', 'datetime']).to_csv(out.joinpath('rec-preds.csv'), index = False)
+		self.brood_periods_results.sort_values(by = ['brood_id', 'period_start']).to_csv(
+			out.joinpath('brood-period-preds.csv'), index = False
+		)
+
+		for brood in self.brood_periods_results['brood_id'].unique():
+			self.plot_brood_results(brood, out)
+
+	def plot_brood_results(self, brood_id: str, out: Path):
+		result_df = self.brood_periods_results[self.brood_periods_results['brood_id'] == brood_id]
+		result_df['period_start'] = pd.to_datetime(result_df['period_start'])
+		min_day = result_df['period_start'].min()
+		n_days = (result_df['period_start'].max() - min_day).days + 1
+		graph_dates = [min_day + timedelta(days = i) for i in range(n_days)]
+		period_dfs = []
+
+		for day in graph_dates:
+			period_row = result_df[result_df['period_start'] == day]
+			if len(period_row) == 0:
+				cls_scores = [0] * len(self.classes)
+			else:
+				period_row = period_row.reset_index().iloc[0]
+				period_n_samples = period_row['n_samples']
+				if period_n_samples == 0:
+					cls_scores = [0] * len(self.classes)
+				else:
+					cls_scores = [period_row[f'{cls}_n_samples'] / period_n_samples for cls in self.classes]
+
+			period_df = pd.DataFrame(data = {
+				'day': [day] * len(self.classes),
+				'class': self.classes,
+				'score': cls_scores
+			})
+			period_dfs.append(period_df)
+
+		graph_df = pd.concat(period_dfs).reset_index().drop(columns = 'index')
+		fig, axes = plt.subplots()
+		sns.scatterplot(graph_df, x = 'day', y = 'class', size = 'score', sizes = (0, 100), legend = False, ax = axes)
+		plt.xticks(rotation = 90)
+		plt.title(f'{self.target.capitalize()} of brood {brood_id}')
+		axes.invert_yaxis()
+		fig.tight_layout()
+		plt.savefig(out.joinpath(f'{brood_id}.png'))
 
 
 class Inference:
@@ -46,7 +91,13 @@ class Inference:
 		brood_period_agg_df = self.__aggregate_by_brood_periods__(
 			agg_df, agg_period_hours, overlap_hours, multi_target_threshold, period_map
 		)
-		return SnowfinchBroodPrediction(pred_df, agg_df, brood_period_agg_df)
+		return SnowfinchBroodPrediction(
+			target = self.model.model_info['target'],
+			classes = self.classes,
+			sample_results = pred_df,
+			rec_results = agg_df,
+			brood_periods_results = brood_period_agg_df
+		)
 
 	def __aggregate_by_brood_periods__(
 			self, pred_df: pd.DataFrame, period_hours: int, overlap_hours = 0,
@@ -224,7 +275,7 @@ class InferenceValidator(ABC):
 			audio_paths, n_workers, agg_period_hours = self.period_hours, overlap_hours = self.overlap_hours,
 			period_map = period_map, multi_target_threshold = self.multi_target_threshold
 		)
-		pred_df = pred.by_brood_periods.set_index(['brood_id', 'period_start'])
+		pred_df = pred.brood_periods_results.set_index(['brood_id', 'period_start'])
 
 		if output:
 			out_path = Path(output)

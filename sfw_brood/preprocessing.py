@@ -185,7 +185,7 @@ def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overl
 
 def __map_class_to_group__(cls: float, groups: List[Tuple[float, float]], group_labels: List[str]) -> str:
 	for (low, high), label in zip(groups, group_labels):
-		if low <= cls <= high:
+		if low <= float(cls) <= high:
 			return label
 	return 'none'
 

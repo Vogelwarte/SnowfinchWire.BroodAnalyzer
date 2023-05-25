@@ -33,7 +33,7 @@ def main():
 	)
 
 	print('\nPrediction result:')
-	print(pred_result.by_brood_periods)
+	print(pred_result.brood_periods_results)
 
 	time_str = datetime.now().isoformat()[:19].replace(':', '-')
 	out_path = Path(args.output_dir).joinpath(f'result__{time_str}')
