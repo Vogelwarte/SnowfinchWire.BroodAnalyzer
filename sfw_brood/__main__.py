@@ -13,6 +13,7 @@ warnings.simplefilter(action = 'ignore', category = FutureWarning)
 def main():
 	arg_parser = argparse.ArgumentParser()
 	arg_parser.add_argument('recording_path', type = str, help = 'Path to audio file or directory')
+	arg_parser.add_argument('-l', '--label-path', type = str, default = None)
 	arg_parser.add_argument('-m', '--model', type = str, help = 'Path to serialized model')
 	arg_parser.add_argument('-o', '--output-dir', type = str, default = '_out')
 	arg_parser.add_argument('-w', '--n-workers', type = int, default = 10)
@@ -29,7 +30,7 @@ def main():
 	pred_result = inference.predict(
 		paths = [Path(args.recording_path)], n_workers = args.n_workers,
 		agg_period_hours = args.period_hours, overlap_hours = args.overlap_hours,
-		multi_target_threshold = args.mt_threshold
+		multi_target_threshold = args.mt_threshold, label_paths = [Path(args.label_path)]
 	)
 
 	print('\nPrediction result:')

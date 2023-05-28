@@ -80,9 +80,10 @@ class Inference:
 
 	def predict(
 			self, paths: List[Path], n_workers: int, agg_period_hours: int,
-			overlap_hours = 0, multi_target_threshold = 0.7, period_map = None
+			label_paths: Optional[List[Path]] = None, overlap_hours = 0,
+			multi_target_threshold = 0.7, period_map = None
 	) -> SnowfinchBroodPrediction:
-		samples_df = self.__prepare_data__(paths)
+		samples_df = self.__prepare_data__(paths, label_paths)
 		print(f'Running predictions for {len(samples_df)} samples:')
 		print(samples_df)
 		pred_df = self.model.predict(samples_df, n_workers = n_workers)
@@ -136,27 +137,38 @@ class Inference:
 
 		return pred_agg_df
 
-	def __prepare_data__(self, audio_paths: List[Path]) -> pd.DataFrame:
-		rec_paths = []
+	def __prepare_data__(self, audio_paths: List[Path], label_paths: Optional[List[Path]]) -> pd.DataFrame:
+		if label_paths is None:
+			label_paths = audio_paths
+		if len(label_paths) != len(audio_paths):
+			print('There must be label path specified for every audio path')
+			exit(1)
 
-		for audio_path in audio_paths:
+		rec_paths = []
+		rec_label_paths = []
+		for audio_path, label_path in zip(audio_paths, label_paths):
 			if audio_path.is_dir():
 				print(f'Inference: discovering recordings from {audio_path.as_posix()} directory')
 				for fmt in ['wav', 'flac', 'WAV']:
 					for file in audio_path.rglob(f'*.{fmt}'):
 						rec_paths.append(file)
+						label_file = file.parent.relative_to(audio_path).joinpath(f'{file.stem}.txt')
+						rec_label_paths.append(label_path.joinpath(label_file))
 			else:
 				rec_paths.append(audio_path)
+				rec_label_paths.append(label_path)
 
 		print(f'Inference: extracting audio samples from {len(rec_paths)} recordings')
 		samples_df = pd.DataFrame()
 
-		for rec_path in tqdm(rec_paths):
-			labels_file = next(Path(rec_path.parent).glob(f'predicted_{rec_path.stem}*.txt'), None)
-			if not labels_file:
+		for rec_path, label_path in tqdm(zip(rec_paths, rec_label_paths)):
+			# labels_file = next(Path(rec_path.parent).glob(f'predicted_{rec_path.stem}*.txt'), None)
+			# if not labels_file:
+			# 	continue
+			if not label_path.exists():
 				continue
 
-			labels_list = read_audacity_labels(labels_file)
+			labels_list = read_audacity_labels(label_path)
 			labels_df = pd.DataFrame(labels_list).convert_dtypes()
 			if labels_df.empty:
 				continue
