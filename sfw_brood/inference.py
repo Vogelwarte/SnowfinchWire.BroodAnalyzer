@@ -84,10 +84,10 @@ class Inference:
 			multi_target_threshold = 0.7, period_map = None
 	) -> SnowfinchBroodPrediction:
 		samples_df = self.__prepare_data__(paths, label_paths)
-		print(f'Running predictions for {len(samples_df)} samples:')
-		print(samples_df)
+		print(f'Running predictions for {len(samples_df)} feeding samples')
+		# print(samples_df)
 		pred_df = self.model.predict(samples_df, n_workers = n_workers)
-		pred_df.to_csv('_inference-pred.csv')
+		# pred_df.to_csv('_inference-pred.csv')
 		pred_df, agg_df = self.__format_predictions__(pred_df)
 		brood_period_agg_df = self.__aggregate_by_brood_periods__(
 			agg_df, agg_period_hours, overlap_hours, multi_target_threshold, period_map
@@ -109,7 +109,7 @@ class Inference:
 			pred_df, period_hours, overlap_hours = overlap_hours, period_map = period_map
 		)
 
-		print(pred_df[['rec_path', 'brood_id', 'datetime', 'period_start', 'n_samples']])
+		# print(pred_df[['rec_path', 'brood_id', 'datetime', 'period_start', 'n_samples']])
 
 		agg_map = { 'rec_path': 'count' }
 		test_cols = ['rec_path', 'brood_id', 'period_start']
@@ -148,7 +148,7 @@ class Inference:
 		rec_label_paths = []
 		for audio_path, label_path in zip(audio_paths, label_paths):
 			if audio_path.is_dir():
-				print(f'Inference: discovering recordings from {audio_path.as_posix()} directory')
+				print(f'Discovering recordings from {audio_path.as_posix()} directory')
 				for fmt in ['wav', 'flac', 'WAV']:
 					for file in audio_path.rglob(f'*.{fmt}'):
 						rec_paths.append(file)
@@ -158,7 +158,7 @@ class Inference:
 				rec_paths.append(audio_path)
 				rec_label_paths.append(label_path)
 
-		print(f'Inference: extracting audio samples from {len(rec_paths)} recordings')
+		print(f'Extracting feeding samples from {len(rec_paths)} recordings')
 		samples_df = pd.DataFrame()
 
 		for rec_path, label_path in tqdm(zip(rec_paths, rec_label_paths)):

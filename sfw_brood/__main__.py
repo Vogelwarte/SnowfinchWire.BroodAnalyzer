@@ -1,13 +1,19 @@
+# import warnings
+# warnings.simplefilter(action = 'ignore')
+
+import os
+import sys
+
+dev_null = open(os.devnull, mode = 'w')
+sys.stderr = dev_null
+
 import argparse
-import warnings
 from datetime import datetime
 from pathlib import Path
 
 from sfw_brood.cnn.model import CNNLoader
 from sfw_brood.inference import Inference
 from sfw_brood.nemo.model import MatchboxNetLoader
-
-warnings.simplefilter(action = 'ignore', category = FutureWarning)
 
 
 def main():
@@ -22,6 +28,9 @@ def main():
 	arg_parser.add_argument('--mt-threshold', type = float, default = 0.5)
 	args = arg_parser.parse_args()
 
+	# with warnings.catch_warnings():
+	# 	warnings.simplefilter('ignore')
+
 	model_loader = CNNLoader()
 	model_loader.set_next(MatchboxNetLoader())
 	model = model_loader.load_model(args.model)
@@ -33,8 +42,8 @@ def main():
 		multi_target_threshold = args.mt_threshold, label_paths = [Path(args.label_path)]
 	)
 
-	print('\nPrediction result:')
-	print(pred_result.brood_periods_results)
+	# print('\nPrediction result:')
+	# print(pred_result.brood_periods_results[['brood_id']])
 
 	time_str = datetime.now().isoformat()[:19].replace(':', '-')
 	out_path = Path(args.output_dir).joinpath(f'result__{time_str}')

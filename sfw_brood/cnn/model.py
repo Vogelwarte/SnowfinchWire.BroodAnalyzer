@@ -20,14 +20,14 @@ class SnowfinchBroodCNN(SnowfinchBroodClassifier):
 			recordings, activation_layer = activation, num_workers = n_workers, batch_size = 64
 		)
 		result_df = pred_result[0] if type(pred_result) == tuple else pred_result
-		result_df.to_csv('_out/_pred-debug.csv')
+		# result_df.to_csv('_out/_pred-debug.csv')
 
 		if self.multi_target:
 			result_df = predict_multi_target_labels(result_df, threshold = self.mt_threshold)
 		else:
 			result_df = predict_single_target_labels(result_df)
 
-		print(f'Predictions made, result df shape = {result_df.shape}')
+		# print(f'Predictions made, result df shape = {result_df.shape}')
 		return result_df.reset_index().drop_duplicates()
 
 	def _serialize_(self, path: str):
