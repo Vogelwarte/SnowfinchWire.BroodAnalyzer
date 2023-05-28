@@ -1,4 +1,5 @@
 import multiprocessing
+import sys
 from typing import Union, List, Tuple
 
 import numpy as np
@@ -68,7 +69,9 @@ class SnowfinchBroodMatchboxNet(SnowfinchBroodClassifier):
 			print(f'Batch {i + 1} / {len(batches)}')
 			audio_samples = []
 			with multiprocessing.Pool(n_workers) as proc_pool:
-				for samples, sample_df in tqdm(proc_pool.imap_unordered(__load_samples__, batch), total = len(batch)):
+				for samples, sample_df in tqdm(
+						proc_pool.imap_unordered(__load_samples__, batch), total = len(batch), file = sys.stdout
+				):
 					audio_samples.append(samples)
 					out_df = pd.concat([out_df, sample_df])
 

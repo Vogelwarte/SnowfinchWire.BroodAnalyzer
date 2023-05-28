@@ -1,3 +1,4 @@
+import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta, time
@@ -141,8 +142,7 @@ class Inference:
 		if label_paths is None:
 			label_paths = audio_paths
 		if len(label_paths) != len(audio_paths):
-			print('There must be label path specified for every audio path')
-			exit(1)
+			raise RuntimeError('There must be label path specified for every audio path')
 
 		rec_paths = []
 		rec_label_paths = []
@@ -161,7 +161,7 @@ class Inference:
 		print(f'Extracting feeding samples from {len(rec_paths)} recordings')
 		samples_df = pd.DataFrame()
 
-		for rec_path, label_path in tqdm(zip(rec_paths, rec_label_paths)):
+		for rec_path, label_path in tqdm(zip(rec_paths, rec_label_paths), total = len(rec_paths), file = sys.stdout):
 			# labels_file = next(Path(rec_path.parent).glob(f'predicted_{rec_path.stem}*.txt'), None)
 			# if not labels_file:
 			# 	continue
