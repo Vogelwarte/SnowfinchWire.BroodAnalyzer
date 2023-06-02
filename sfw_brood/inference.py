@@ -25,7 +25,7 @@ class SnowfinchBroodPrediction:
 	rec_results: pd.DataFrame
 	brood_periods_results: pd.DataFrame
 
-	def save(self, out: Union[Path, str]):
+	def save(self, out: Union[Path, str], brood_period_truth: Optional[pd.DataFrame] = None):
 		out = Path(out)
 		out.mkdir(parents = True, exist_ok = True)
 		self.sample_results.to_csv(out.joinpath('sample-preds.csv'), index = False)
@@ -35,9 +35,12 @@ class SnowfinchBroodPrediction:
 		)
 
 		for brood in self.brood_periods_results['brood_id'].unique():
-			self.plot_brood_results(brood, out)
+			brood_truth = None
+			if brood_period_truth is not None:
+				brood_truth = brood_period_truth[brood_period_truth['brood_id'] == brood]
+			self.plot_brood_results(brood, out, brood_truth)
 
-	def plot_brood_results(self, brood_id: str, out: Path):
+	def plot_brood_results(self, brood_id: str, out: Path, brood_truth: Optional[pd.DataFrame] = None):
 		result_df = self.brood_periods_results[self.brood_periods_results['brood_id'] == brood_id]
 		result_df['period_start'] = pd.to_datetime(result_df['period_start'])
 		min_day = result_df['period_start'].min()
@@ -62,16 +65,47 @@ class SnowfinchBroodPrediction:
 				'class': self.classes,
 				'score': cls_scores
 			})
+
+			if brood_truth is not None:
+				true_class = brood_truth.loc[brood_truth['period_start'] == day, 'class']
+				if len(true_class) == 1:
+					true_class = true_class.iloc[0]
+				else:
+					true_class = np.NaN
+				period_df['true_class'] = [true_class] * len(self.classes)
+
 			period_dfs.append(period_df)
 
 		graph_df = pd.concat(period_dfs).reset_index().drop(columns = 'index')
 		fig, axes = plt.subplots()
 		sns.scatterplot(graph_df, x = 'day', y = 'class', size = 'score', sizes = (0, 100), legend = False, ax = axes)
+		if brood_truth is not None:
+			sns.lineplot(graph_df, x = 'day', y = 'true_class', color = 'r', ax = axes)
+
 		plt.xticks(rotation = 90)
 		plt.title(f'{self.target.capitalize()} of brood {brood_id}')
 		axes.invert_yaxis()
 		fig.tight_layout()
 		plt.savefig(out.joinpath(f'{brood_id}.png'))
+
+	# if self.target == 'age':
+	# 	def parse_age_range(age_range: str) -> Tuple[float, float, float]:
+	# 		low, high = age_range.split('-')
+	# 		low = float(low)
+	# 		high = float(high)
+	# 		return low, (low + high) / 2, high
+	#
+	# 	result_df['pred_cls'] = result_df[self.classes].idxmax(axis = 1)
+	# 	result_df[['age_min', 'age_mean', 'age_max']] = result_df.apply(
+	# 		lambda row: parse_age_range(row['pred_cls']), result_type = 'expand', axis = 'columns'
+	# 	)
+	# 	fig, axes = plt.subplots()
+	# 	axes.plot(result_df['age_min'])
+	# 	axes.plot(result_df['age_mean'])
+	# 	axes.plot(result_df['age_max'])
+	# 	plt.xticks(np.arange(0, len(result_df)), labels = result_df['period_start'], rotation = 90)
+	# 	fig.tight_layout()
+	# 	plt.savefig(out.joinpath(f'{brood_id}-lines.png'))
 
 
 class Inference:
@@ -138,9 +172,12 @@ class Inference:
 
 		return pred_agg_df
 
+	def __label_path_for_rec__(self, rec_path: Path) -> Path:
+		return rec_path.parent.joinpath(f'predicted_{rec_path.stem}.txt')
+
 	def __prepare_data__(self, audio_paths: List[Path], label_paths: Optional[List[Path]]) -> pd.DataFrame:
 		if label_paths is None:
-			label_paths = audio_paths
+			label_paths = [path if path.is_dir() else self.__label_path_for_rec__(path) for path in audio_paths]
 		if len(label_paths) != len(audio_paths):
 			raise RuntimeError('There must be label path specified for every audio path')
 
@@ -152,7 +189,7 @@ class Inference:
 				for fmt in ['wav', 'flac', 'WAV']:
 					for file in audio_path.rglob(f'*.{fmt}'):
 						rec_paths.append(file)
-						label_file = file.parent.relative_to(audio_path).joinpath(f'{file.stem}.txt')
+						label_file = self.__label_path_for_rec__(file.relative_to(audio_path))
 						rec_label_paths.append(label_path.joinpath(label_file))
 			else:
 				rec_paths.append(audio_path)
@@ -162,6 +199,7 @@ class Inference:
 		samples_df = pd.DataFrame()
 
 		for rec_path, label_path in tqdm(zip(rec_paths, rec_label_paths), total = len(rec_paths), file = sys.stdout):
+			# print(rec_path, label_path)
 			# labels_file = next(Path(rec_path.parent).glob(f'predicted_{rec_path.stem}*.txt'), None)
 			# if not labels_file:
 			# 	continue
@@ -287,16 +325,18 @@ class InferenceValidator(ABC):
 			audio_paths, n_workers, agg_period_hours = self.period_hours, overlap_hours = self.overlap_hours,
 			period_map = period_map, multi_target_threshold = self.multi_target_threshold
 		)
+
 		pred_df = pred.brood_periods_results.set_index(['brood_id', 'period_start'])
+		classes = inference.classes
 
 		if output:
 			out_path = Path(output)
 			out_path.mkdir(parents = True, exist_ok = True)
-			test_data.to_csv(out_path.joinpath('test.csv'))
-			pred_df.to_csv(out_path.joinpath('pred.csv'))
-			pred.save(out_path.joinpath('inference-pred'))
+			# test_data.sort_values(by = ['brood_id', 'period_start']).to_csv(out_path.joinpath('test.csv'))
+			# pred_df.sort_values(by = ['brood_id', 'period_start']).to_csv(out_path.joinpath('pred.csv'))
+			test_data['class'] = test_data[classes].idxmax(axis = 1)
+			pred.save(out_path.joinpath('inference-pred'), brood_period_truth = test_data)
 
-		classes = inference.classes
 		return generate_validation_results(
 			test_df = test_data.set_index(['brood_id', 'period_start']).loc[pred_df.index, classes],
 			pred_df = pred_df[classes],
@@ -320,11 +360,13 @@ class BroodSizeInferenceValidator(InferenceValidator):
 		if self.size_groups is None:
 			size_test_df = test_data.drop(columns = ['age_min', 'age_max', 'datetime'])
 
+			size_classes = [int(cls) for cls in classes]
 			size_test_df['brood_size'] = size_test_df['brood_size'].astype('category')
-			size_test_df['brood_size'] = size_test_df['brood_size'].cat.set_categories(classes)
+			size_test_df['brood_size'] = size_test_df['brood_size'].cat.set_categories(size_classes)
 
 			size_1hot = pd.get_dummies(size_test_df['brood_size'])
 			size_test_df = pd.concat([size_test_df.drop(columns = 'brood_size'), size_1hot.astype('int')], axis = 1)
+			size_test_df.columns = [str(col) for col in size_test_df.columns]
 		else:
 			size_test_df, _ = group_sizes(
 				test_data.rename(columns = { 'brood_size': 'class' }),

@@ -140,8 +140,8 @@ def generate_validation_results(
 	else:
 		y_pred = pred_df.idxmax(axis = 1)
 		y_true = test_df.idxmax(axis = 1)
-		print(f'y_true = {y_true}')
-		print(f'y_pred = {y_pred}')
+		# print(f'y_true = {y_true}')
+		# print(f'y_pred = {y_pred}')
 		result = {
 			'accuracy': accuracy_score(y_true, y_pred)
 		}
@@ -163,5 +163,13 @@ def generate_validation_results(
 		else:
 			save_results(target_label, classes, result, cm, out_dir = output)
 			print(f'Classification report and confusion matrix saved to {output}')
+
+			merge_df = test_df.reset_index().sort_values(by = ['brood_id', 'period_start'])
+			merge_df.columns = [f'test_{col}' for col in merge_df.columns]
+			merge_df = pd.concat(
+				[pred_df.reset_index().sort_values(by = ['brood_id', 'period_start']), merge_df],
+				axis = 1
+			)
+			merge_df.to_csv(Path(output).joinpath('pred-test.csv'))
 
 	return result
