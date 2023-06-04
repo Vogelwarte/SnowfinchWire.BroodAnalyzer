@@ -126,6 +126,15 @@ def normalize_confusion_matrix(cm: np.ndarray) -> np.ndarray:
 	return cm / div
 
 
+# pred_df must have columns brood_id and class
+def check_accuracy_per_brood(pred_df: pd.DataFrame, true_values, out_path: Union[str, Path]):
+	pred_df['is_ok'] = (pred_df['class'] == true_values).astype(int)
+	pred_df = pred_df[['brood_id', 'is_ok']].reset_index()
+	brood_pred_df = pred_df.groupby('brood_id').agg({'is_ok': 'sum', 'index': 'count'}).reset_index()
+	brood_pred_df = brood_pred_df.rename(columns = {'index': 'total_samples', 'is_ok': 'ok_samples'})
+	brood_pred_df.to_csv(out_path, index = False)
+
+
 def generate_validation_results(
 		test_df: pd.DataFrame, pred_df: pd.DataFrame, classes: list, target_label: str,
 		output = '', multi_target = False
@@ -163,13 +172,5 @@ def generate_validation_results(
 		else:
 			save_results(target_label, classes, result, cm, out_dir = output)
 			print(f'Classification report and confusion matrix saved to {output}')
-
-			merge_df = test_df.reset_index().sort_values(by = ['brood_id', 'period_start'])
-			merge_df.columns = [f'test_{col}' for col in merge_df.columns]
-			merge_df = pd.concat(
-				[pred_df.reset_index().sort_values(by = ['brood_id', 'period_start']), merge_df],
-				axis = 1
-			)
-			merge_df.to_csv(Path(output).joinpath('pred-test.csv'))
 
 	return result
