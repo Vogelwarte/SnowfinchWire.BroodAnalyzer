@@ -1,0 +1,14 @@
+data:
+  recordings: /home/gardzielb/test3
+  labels: /home/gardzielb/test_labels
+model:
+  path: /home/gardzielb/sfw-brood-work/may/models
+  n_workers: 20
+output_dir: /home/gardzielb/sfw-brood-work/may/integration/config
+aggregation:
+  period_hours: 48
+  overlap_hours: 0
+#feeding_detector:
+#  type: fe
+#  path: /home/gardzielb/janek/SnowfinchWire.BeggingCallsAnalyzer
+#  model: /home/gardzielb/model

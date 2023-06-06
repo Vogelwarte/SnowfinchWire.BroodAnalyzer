@@ -10,3 +10,4 @@ scikit-learn>=1.2.0
 markupsafe==2.0.1
 nemo_toolkit[asr]~=1.18.1
 seaborn~=0.12.2
+PyYAML~=5.4.1

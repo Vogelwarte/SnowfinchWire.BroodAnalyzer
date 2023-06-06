@@ -1,7 +1,6 @@
 import sys
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Union, List, Optional, Tuple
 
@@ -12,13 +11,13 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from sfw_brood.common.preprocessing.io import read_audacity_labels
+from sfw_brood.inference.util import assign_recording_periods
 from sfw_brood.model import SnowfinchBroodClassifier, classes_from_data_config
-from sfw_brood.preprocessing import group_ages, group_sizes
-from sfw_brood.validation import generate_validation_results, check_accuracy_per_brood
 
 
 @dataclass
 class SnowfinchBroodPrediction:
+	model_name: str
 	target: str
 	classes: List[str]
 	sample_results: pd.DataFrame
@@ -83,7 +82,7 @@ class SnowfinchBroodPrediction:
 			sns.lineplot(graph_df, x = 'day', y = 'true_class', color = 'r', ax = axes)
 
 		plt.xticks(rotation = 90)
-		plt.title(f'{self.target.capitalize()} of brood {brood_id}')
+		plt.title(f'{self.target.capitalize()} of brood {brood_id} predicted by {self.model_name} model')
 		axes.invert_yaxis()
 		fig.tight_layout()
 		plt.savefig(out.joinpath(f'{brood_id}.png'))
@@ -129,6 +128,7 @@ class Inference:
 			agg_df, agg_period_hours, overlap_hours, multi_target_threshold, period_map
 		)
 		return SnowfinchBroodPrediction(
+			model_name = self.model.model_type.name,
 			target = self.model.model_info['target'],
 			classes = self.classes,
 			sample_results = pred_df,
@@ -176,6 +176,7 @@ class Inference:
 		return pred_agg_df
 
 	def __label_path_for_rec__(self, rec_path: Path) -> Path:
+		# return rec_path.parent.joinpath(f'{rec_path.stem}.txt')
 		return rec_path.parent.joinpath(f'predicted_{rec_path.stem}.txt')
 
 	def __prepare_data__(self, audio_paths: List[Path], label_paths: Optional[List[Path]]) -> pd.DataFrame:
@@ -259,203 +260,3 @@ class Inference:
 		pred_df = pred_df[['rec_path', 'brood_id', 'start_time', 'end_time', 'class']]
 
 		return pred_df, agg_df
-
-
-def __timedelta_from_hours__(hours: int) -> timedelta:
-	return timedelta(days = hours // 24, hours = hours % 24)
-
-
-def __timedelta_to_hours__(td: timedelta) -> int:
-	return td.days * 24 + td.seconds // 3600
-
-
-def assign_recording_periods(
-		rec_df: pd.DataFrame, period_hours: int, period_map: Optional[dict] = None, overlap_hours = 0
-) -> Tuple[pd.DataFrame, dict]:
-	def calculate_period_start(rec_time, min_date):
-		period_offset = __timedelta_to_hours__(rec_time - min_date) // period_hours
-		return min_date + __timedelta_from_hours__(period_hours * period_offset)
-
-	period_df = pd.DataFrame()
-	period_map_out = { }
-
-	for brood in rec_df['brood_id'].unique():
-		brood_df = rec_df[rec_df['brood_id'] == brood]
-
-		if period_map and brood in period_map.keys():
-			period_starts = period_map[brood]
-		else:
-			min_datetime = brood_df['datetime'].min()
-			base_hour = (min_datetime.hour // period_hours) * period_hours if period_hours <= 12 else 0
-			base_period_start = datetime.combine(min_datetime.date(), time(base_hour))
-			period_starts = [base_period_start]
-			if overlap_hours > 0:
-				period_starts.append(base_period_start + __timedelta_from_hours__(period_hours - overlap_hours))
-
-		period_map_out[brood] = period_starts
-
-		for period_start in period_starts:
-			brood_period_df = brood_df[brood_df['datetime'] >= period_start]
-			brood_period_df['period_start'] = brood_period_df['datetime'].apply(
-				lambda dt: calculate_period_start(dt, period_start)
-			)
-			period_df = pd.concat([period_df, brood_period_df])
-
-	return period_df, period_map_out
-
-
-class InferenceValidator(ABC):
-	def __init__(self, period_hours: int, overlap_hours: int, target: str, multi_target_threshold: float):
-		self.period_hours = period_hours
-		self.overlap_hours = overlap_hours
-		self.target = target
-		self.multi_target_threshold = multi_target_threshold
-
-	def validate_inference(
-			self, inference: Inference, test_data: pd.DataFrame, data_root: Path, output: str, n_workers = 10
-	) -> dict:
-		classes = inference.classes
-		is_multi_target = inference.model.model_info['multi_target']
-		audio_paths = [data_root.joinpath(path) for path in test_data['rec_path']]
-
-		test_data['datetime'] = pd.to_datetime(test_data['datetime'])
-		test_data, period_map = assign_recording_periods(
-			test_data, period_hours = self.period_hours, overlap_hours = self.overlap_hours
-		)
-		samples_test_data, test_data = self._aggregate_test_data_(test_data, classes, is_multi_target)
-		test_data['class'] = test_data[classes].idxmax(axis = 1)
-
-		pred = inference.predict(
-			audio_paths, n_workers, agg_period_hours = self.period_hours, overlap_hours = self.overlap_hours,
-			period_map = period_map, multi_target_threshold = self.multi_target_threshold
-		)
-
-		out_path = Path(output)
-		out_path.mkdir(parents = True, exist_ok = True)
-		# test_data.sort_values(by = ['brood_id', 'period_start']).to_csv(out_path.joinpath('test.csv'))
-		# pred_df.sort_values(by = ['brood_id', 'period_start']).to_csv(out_path.joinpath('pred.csv'))
-		pred.save(out_path.joinpath('inference-pred'), brood_period_truth = test_data)
-
-		pred_df = pred.brood_periods_results.set_index(['brood_id', 'period_start'])
-		test_data = test_data.set_index(['brood_id', 'period_start']).loc[pred_df.index]
-
-		merge_df = test_data.reset_index().sort_values(by = ['brood_id', 'period_start'])
-		merge_df.columns = [f'test_{col}' for col in merge_df.columns]
-		merge_df = pd.concat(
-			[pred_df[classes].reset_index().sort_values(by = ['brood_id', 'period_start']), merge_df],
-			axis = 1
-		)
-		merge_df.to_csv(Path(output).joinpath('pred-test.csv'))
-
-		check_accuracy_per_brood(
-			pred.brood_periods_results, test_data.reset_index()['class'],
-			out_path = out_path.joinpath('brood-scores-from-periods.csv')
-		)
-
-		samples_pred_df = pred.sample_results
-		samples_pred_df['rec_path'] = samples_pred_df['rec_path'].apply(
-			lambda p: Path(p).relative_to(data_root).as_posix()
-		)
-
-		samples_true_df = samples_test_data[~samples_test_data['rec_path'].duplicated(keep = 'first')] \
-			.set_index('rec_path').reindex(samples_pred_df['rec_path']).dropna().reset_index()
-
-		samples_true_df.to_csv(out_path.joinpath('samples-true-df.csv'))
-		samples_pred_df.to_csv(out_path.joinpath('samples-pred-df.csv'))
-
-		check_accuracy_per_brood(
-			pred_df = samples_pred_df[samples_pred_df['rec_path'].isin(samples_true_df['rec_path'])].reset_index(),
-			true_values = samples_true_df['class'], out_path = out_path.joinpath('brood-scores-from-samples.csv')
-		)
-
-		return generate_validation_results(
-			test_df = test_data[classes],
-			pred_df = pred_df[classes],
-			classes = classes,
-			target_label = f'brood {self.target}',
-			output = output,
-			multi_target = is_multi_target
-		)
-
-	@abstractmethod
-	def _aggregate_test_data_(
-			self, test_data: pd.DataFrame, classes: list, multi_target = False
-	) -> Tuple[pd.DataFrame, pd.DataFrame]:
-		pass
-
-
-class BroodSizeInferenceValidator(InferenceValidator):
-	def __init__(self, period_hours: int, overlap_hours: int, size_groups: Optional[List[Tuple[float, float]]] = None):
-		super().__init__(period_hours, overlap_hours, target = 'size', multi_target_threshold = 0.0)
-		self.size_groups = size_groups
-
-	def _aggregate_test_data_(
-			self, test_data: pd.DataFrame, classes: list, multi_target = False
-	) -> Tuple[pd.DataFrame, pd.DataFrame]:
-		size_test_df = test_data \
-			.drop(columns = ['age_min', 'age_max', 'datetime']) \
-			.rename(columns = { 'brood_size': 'class' })
-
-		if self.size_groups is None:
-			size_classes = [int(cls) for cls in classes]
-			size_test_df['class'] = size_test_df['class'].astype('category')
-			size_test_df['class'] = size_test_df['class'].cat.set_categories(size_classes)
-
-			size_1hot = pd.get_dummies(size_test_df['class'])
-			size_test_df = pd.concat([size_test_df, size_1hot.astype('int')], axis = 1)
-			size_test_df.columns = [str(col) for col in size_test_df.columns]
-		else:
-			size_test_df, _ = group_sizes(test_data, groups = self.size_groups)
-
-		agg_map = { 'rec_path': 'count' }
-		for bs in classes:
-			agg_map[bs] = 'sum'
-
-		agg_cols = ['brood_id', 'period_start'] + list(agg_map.keys())
-		size_test_agg = size_test_df.groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
-		size_test_agg = size_test_agg.rename(columns = { 'rec_path': 'rec_count' })
-
-		for bs in classes:
-			size_test_agg[bs] = np.where(size_test_agg[bs] / size_test_agg['rec_count'] > 0.8, 1, 0)
-
-		return size_test_df, size_test_agg
-
-
-class BroodAgeInferenceValidator(InferenceValidator):
-	def __init__(
-			self, period_hours: int, overlap_hours: int,
-			age_groups: List[Tuple[float, float]], multi_target_threshold = 0.3
-	):
-		super().__init__(period_hours, overlap_hours, target = 'age', multi_target_threshold = multi_target_threshold)
-		self.age_groups = age_groups
-
-	def _aggregate_test_data_(
-			self, test_data: pd.DataFrame, classes: list, multi_target = False
-	) -> Tuple[pd.DataFrame, pd.DataFrame]:
-		age_test_df, _ = group_ages(
-			test_data.rename(columns = { 'age_min': 'class_min', 'age_max': 'class_max' }),
-			groups = self.age_groups, multi_target = True
-		)
-		age_test_df = age_test_df.drop(columns = ['datetime', 'age_min', 'age_max'])
-		agg_map = { 'rec_path': 'count' }
-		for age_group in classes:
-			agg_map[age_group] = 'sum'
-
-		age_test_agg = age_test_df.groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
-		age_test_agg = age_test_agg.rename(columns = { 'rec_path': 'rec_count' })
-
-		if multi_target:
-			for age_group in classes:
-				age_test_agg[age_group] = np.where(
-					age_test_agg[age_group] / age_test_agg['rec_count'] > self.multi_target_threshold, 1, 0
-				)
-		else:
-			cls_max = age_test_agg[classes].idxmax(axis = 1)
-			for age_group in classes:
-				age_test_agg[age_group] = np.where(cls_max == age_group, 1, 0)
-
-			age_test_df['n_classes'] = age_test_df[classes].sum(axis = 1)
-			age_test_df = age_test_df[age_test_df['n_classes'] == 1]
-			age_test_df['class'] = age_test_df[classes].idxmax(axis = 1)
-
-		return age_test_df, age_test_agg

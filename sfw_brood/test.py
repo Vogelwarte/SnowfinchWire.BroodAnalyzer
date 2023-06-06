@@ -7,7 +7,8 @@ from pathlib import Path
 import pandas as pd
 
 from sfw_brood.cnn.model import CNNLoader
-from sfw_brood.inference import Inference, BroodAgeInferenceValidator, BroodSizeInferenceValidator
+from sfw_brood.inference.core import Inference
+from sfw_brood.inference.validation import BroodAgeInferenceValidator, BroodSizeInferenceValidator
 from sfw_brood.nemo.model import MatchboxNetLoader
 
 warnings.simplefilter(action = 'ignore')

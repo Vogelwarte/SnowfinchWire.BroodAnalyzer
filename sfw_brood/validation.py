@@ -128,7 +128,7 @@ def normalize_confusion_matrix(cm: np.ndarray) -> np.ndarray:
 
 # pred_df must have columns brood_id and class
 def check_accuracy_per_brood(pred_df: pd.DataFrame, true_values, out_path: Union[str, Path]):
-	pred_df['is_ok'] = (pred_df['class'] == true_values).astype(int)
+	pred_df['is_ok'] = (pred_df['class'].astype(str) == true_values.astype(str)).astype(int)
 	pred_df = pred_df[['brood_id', 'is_ok']].reset_index()
 	brood_pred_df = pred_df.groupby('brood_id').agg({'is_ok': 'sum', 'index': 'count'}).reset_index()
 	brood_pred_df = brood_pred_df.rename(columns = {'index': 'total_samples', 'is_ok': 'ok_samples'})
