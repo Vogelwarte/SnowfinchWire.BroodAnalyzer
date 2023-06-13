@@ -15,6 +15,14 @@ from sfw_brood.inference.util import assign_recording_periods
 from sfw_brood.model import SnowfinchBroodClassifier, classes_from_data_config
 
 
+def __search_by_period__(df: pd.DataFrame, period_start: datetime, column: str):
+	target_df = df.loc[df['period_start'] == period_start, column]
+	if len(target_df) == 1:
+		return target_df.iloc[0]
+	else:
+		return np.NaN
+
+
 @dataclass
 class SnowfinchBroodPrediction:
 	model_name: str
@@ -66,12 +74,8 @@ class SnowfinchBroodPrediction:
 			})
 
 			if brood_truth is not None:
-				true_class = brood_truth.loc[brood_truth['period_start'] == day, 'class']
-				if len(true_class) == 1:
-					true_class = true_class.iloc[0]
-				else:
-					true_class = np.NaN
-				period_df['true_class'] = [true_class] * len(self.classes)
+				period_df['true_class_1'] = [__search_by_period__(brood_truth, day, 'class')] * len(self.classes)
+				period_df['true_class_2'] = [__search_by_period__(brood_truth, day, 'class_2')] * len(self.classes)
 
 			period_dfs.append(period_df)
 
@@ -79,7 +83,8 @@ class SnowfinchBroodPrediction:
 		fig, axes = plt.subplots()
 		sns.scatterplot(graph_df, x = 'day', y = 'class', size = 'score', sizes = (0, 100), legend = False, ax = axes)
 		if brood_truth is not None:
-			sns.lineplot(graph_df, x = 'day', y = 'true_class', color = 'r', ax = axes)
+			sns.lineplot(graph_df, x = 'day', y = 'true_class_1', color = 'r', ax = axes)
+			sns.lineplot(graph_df, x = 'day', y = 'true_class_2', color = 'r', ax = axes)
 
 		plt.xticks(rotation = 90)
 		plt.title(f'{self.target.capitalize()} of brood {brood_id} predicted by {self.model_name} model')
@@ -176,8 +181,8 @@ class Inference:
 		return pred_agg_df
 
 	def __label_path_for_rec__(self, rec_path: Path) -> Path:
-		# return rec_path.parent.joinpath(f'{rec_path.stem}.txt')
-		return rec_path.parent.joinpath(f'predicted_{rec_path.stem}.txt')
+		return rec_path.parent.joinpath(f'{rec_path.stem}.txt')
+		# return rec_path.parent.joinpath(f'predicted_{rec_path.stem}.txt')
 
 	def __prepare_data__(self, audio_paths: List[Path], label_paths: Optional[List[Path]]) -> pd.DataFrame:
 		if label_paths is None:

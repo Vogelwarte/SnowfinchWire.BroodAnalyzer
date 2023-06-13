@@ -2,21 +2,25 @@ import argparse
 import subprocess
 import sys
 import yaml
+import warnings
 from datetime import datetime
 from pathlib import Path
 
 
-def detect_feeding(path: str, model_type: str, model_path: str, rec_path: str, out_path: str):
+def detect_feeding(path: str, model_type: str, model_path: str, rec_path: str, out_path: str, extra_args: dict):
 	out_path = Path(out_path).absolute()
 	model_path = Path(model_path).absolute()
 	rec_path = Path(rec_path).absolute()
 
 	args = [
-		'/home/gardzielb/SnowfinchWire.BeggingCallsAnalyzer/venv/bin/python',
-		'-m', 'beggingcallsanalyzer', f'predict-{model_type}',
+		sys.executable, '-Wignore', '-m', 'beggingcallsanalyzer', f'predict-{model_type}',
 		f'--model-path={model_path.as_posix()}', f'--input-directory={rec_path.as_posix()}',
-		f'--output-directory={out_path.as_posix()}', '--extension=WAV'
+		f'--output-directory={out_path.as_posix()}'
 	]
+
+	for key, val in extra_args.items():
+		args.append(f'--{key}={val}')
+
 	print('Detecting feeding calls...')
 	process = subprocess.run(args, cwd = path)
 	print('Feeding detection done')
@@ -46,9 +50,11 @@ def load_config(path: str) -> dict:
 			'overlap_hours': config['aggregation'].get('overlap_hours', 0)
 		}
 		if 'feeding_detector' in config.keys():
-			args['feeding_detector_type'] = config['feeding_detector'].get('type', 'fe'),
+			args['feeding_detector_type'] = config['feeding_detector'].get('type', 'fe')
 			args['feeding_detector_path'] = config['feeding_detector'].get('path', '.')
-			args['feeding_detector_type'] = config['feeding_detector']['model']
+			fd_args = config['feeding_detector']['args']
+			args['feeding_detector_model'] = fd_args.pop('model_path')
+			args['feeding_detector_extra_args'] = fd_args
 		return args
 
 	except KeyError:
@@ -75,9 +81,12 @@ def main():
 	arg_parser.add_argument('--feeding-detector-model', type = str, default = None)
 	args = arg_parser.parse_args()
 
+	feeding_detector_args = {}
 	if args.config_path is not None:
 		config = load_config(args.config_path)
+		print(f'Loaded config from file: {config}')
 		args.__dict__.update(config)
+		feeding_detector_args.update(config['feeding_detector_extra_args'])
 
 	if args.recording_path is None or args.model_path is None:
 		print('Missing required arguments: recording_path or model')
@@ -92,7 +101,8 @@ def main():
 			model_type = args.feeding_detector_type,
 			model_path = args.feeding_detector_model,
 			rec_path = args.recording_path,
-			out_path = labels_path
+			out_path = labels_path,
+			extra_args = feeding_detector_args
 		)
 
 	time_str = datetime.now().isoformat()[:19].replace(':', '-')
@@ -100,13 +110,14 @@ def main():
 
 	error_log = open('.error.log', mode = 'w')
 	sys.stderr = error_log
+	warnings.filterwarnings('ignore')
 
 	from sfw_brood.inference.core import Inference
 	from sfw_brood.cnn.model import CNNLoader
-	from sfw_brood.nemo.model import MatchboxNetLoader
+	# from sfw_brood.nemo.model import MatchboxNetLoader
 
 	model_loader = CNNLoader()
-	model_loader.set_next(MatchboxNetLoader())
+	# model_loader.set_next(MatchboxNetLoader())
 
 	model_path = Path(args.model_path)
 	if model_path.is_dir():
@@ -134,6 +145,8 @@ def main():
 	except Exception as error:
 		print(error)
 		exit(1)
+
+	error_log.close()
 
 
 if __name__ == '__main__':
