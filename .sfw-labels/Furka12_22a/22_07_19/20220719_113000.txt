@@ -1,3 +1,0 @@
-0.5	12.5	feeding
-19.5	23.5	feeding
-531.5	551.0	feeding
