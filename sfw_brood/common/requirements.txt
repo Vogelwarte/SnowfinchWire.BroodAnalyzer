@@ -1,0 +1,3 @@
+pandas>=1.5.2
+numpy>=1.23.5
+soundfile>=0.11.0
