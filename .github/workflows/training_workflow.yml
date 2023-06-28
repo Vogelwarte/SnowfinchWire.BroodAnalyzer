@@ -53,6 +53,7 @@ on:
         type: choice
         options:
           - data-split-server.json
+          - data-split-nemo.json
           - data-no-test.json
           - data-config-size-groups.json
           - data-fold-1.json
@@ -143,7 +144,7 @@ jobs:
           --samples-per-class ${{ github.event.inputs.samples_per_class }} \
           --age-mode ${{ github.event.inputs.age_mode }} \
           --age-range ${{ github.event.inputs.age_range }} \
-          "$WORK_DIR/out/s${{ github.event.inputs.sample_duration }}" \
+          "$WORK_DIR/out2/s${{ github.event.inputs.sample_duration }}" \
           "$WORK_DIR/s${{ github.event.inputs.sample_duration }}/audio"
       - name: Test size model inference
         if: ${{ github.event.inputs.target == 'size' || github.event.inputs.target == 'all' }}
