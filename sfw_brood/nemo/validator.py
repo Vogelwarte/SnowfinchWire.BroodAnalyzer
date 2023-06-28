@@ -31,8 +31,11 @@ def extract_logits(model, dataloader):
 
 
 def parse_manifest(manifest):
+	with open(manifest, 'r') as test_f:
+		lines = test_f.readlines()
+
 	data = []
-	for line in manifest:
+	for line in lines:
 		line = json.loads(line)
 		data.append(line)
 
@@ -84,20 +87,3 @@ class MatchboxNetValidator(ModelValidator):
 		)
 
 		return summary
-
-		# cpu_model = model.network.cpu()
-		# cpu_model.eval()
-		# logits, labels = extract_logits(cpu_model, self.data_loader)
-		# print("Logits:", logits.shape, "Labels :", labels.shape)
-		#
-		# acc = cpu_model._accuracy(logits = logits, labels = labels)
-		# print("Accuracy : ", float(acc[0] * 100))
-		#
-		# rev_map = ReverseMapLabel(self.data_loader)
-		# results = []
-		#
-		# probs = torch.softmax(logits, dim = -1)
-		# probas, preds = torch.max(probs, dim = -1)
-		# total_count = cpu_model._accuracy.total_counts_k[0]
-		#
-		# print(total_count.items())
