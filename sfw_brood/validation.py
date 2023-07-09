@@ -82,15 +82,14 @@ def __aggregate_results__(result_dirs: List[Path], out_dir: Path):
 	)
 
 
-def save_results(
-		target: str, classes: List[str], scores: dict, cm: np.ndarray, out_dir: Union[Path, str],
-		extra_info: Optional[dict] = None
-):
-	out_path = Path(out_dir)
+def save_confusion_matrix(cm: np.ndarray, out_dir: Path):
+	out_dir.mkdir(parents = True, exist_ok = True)
+	np.save(out_dir.joinpath('confusion-matrix.npy').as_posix(), cm)
+	plt.savefig(out_dir.joinpath('confusion-matrix.png'))
 
-	out_path.mkdir(parents = True, exist_ok = True)
-	np.save(out_path.joinpath('confusion-matrix.npy').as_posix(), cm)
-	plt.savefig(out_path.joinpath('confusion-matrix.png'))
+
+def save_test_summary(target: str, classes: List[str], scores: dict, out_dir: Path, extra_info: Optional[dict] = None):
+	out_dir.mkdir(parents = True, exist_ok = True)
 
 	summary = {
 		'target': target,
@@ -101,8 +100,17 @@ def save_results(
 	if extra_info is not None:
 		summary.update(extra_info)
 
-	with open(out_path.joinpath('test-result.json'), mode = 'wt') as result_file:
+	with open(out_dir.joinpath('test-result.json'), mode = 'wt') as result_file:
 		json.dump(summary, result_file, indent = 4)
+
+
+def save_results(
+		target: str, classes: List[str], scores: dict, cm: np.ndarray, out_dir: Union[Path, str],
+		extra_info: Optional[dict] = None
+):
+	out_path = Path(out_dir)
+	save_confusion_matrix(cm, out_path)
+	save_test_summary(target, classes, scores, out_path, extra_info)
 
 
 def aggregate_results(result_dirs: List[Union[str, Path]], out_dir: Union[str, Path]):
@@ -130,11 +138,12 @@ def normalize_confusion_matrix(cm: np.ndarray) -> np.ndarray:
 def check_accuracy_per_brood(pred_df: pd.DataFrame, true_values, out_path: Union[str, Path]):
 	pred_df['is_ok'] = (pred_df['class'].astype(str) == true_values.astype(str)).astype(int)
 	pred_df = pred_df[['brood_id', 'is_ok']].reset_index()
-	brood_pred_df = pred_df.groupby('brood_id').agg({'is_ok': 'sum', 'index': 'count'}).reset_index()
-	brood_pred_df = brood_pred_df.rename(columns = {'index': 'total_samples', 'is_ok': 'ok_samples'})
+	brood_pred_df = pred_df.groupby('brood_id').agg({ 'is_ok': 'sum', 'index': 'count' }).reset_index()
+	brood_pred_df = brood_pred_df.rename(columns = { 'index': 'total_samples', 'is_ok': 'ok_samples' })
 	brood_pred_df.to_csv(out_path, index = False)
 
 
+# test_df, pred_df: columns are classes, values are from {0,1}
 def generate_validation_results(
 		test_df: pd.DataFrame, pred_df: pd.DataFrame, classes: list, target_label: str,
 		output = '', multi_target = False

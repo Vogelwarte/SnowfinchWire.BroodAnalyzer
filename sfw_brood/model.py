@@ -13,6 +13,7 @@ from sfw_brood.preprocessing import label_class_groups
 class ModelType(Enum):
 	CNN = 0
 	MATCHBOX = 1
+	SIMPLE_SIZE_CLF = 2
 
 
 class SnowfinchBroodClassifier(ABC):

@@ -8,6 +8,7 @@ from pandas.errors import SettingWithCopyWarning
 
 from sfw_brood.cnn.trainer import CNNTrainer
 from sfw_brood.nemo.trainer import MatchboxNetTrainer
+from sfw_brood.simple_size_clf.trainer import SimpleClfTrainer
 
 warnings.simplefilter(action = 'ignore', category = FutureWarning)
 warnings.simplefilter(action = 'ignore', category = SettingWithCopyWarning)
@@ -39,7 +40,7 @@ if __name__ == '__main__':
 	arg_parser.add_argument(
 		'-a', '--arch', type = str, default = 'resnet18', choices = [
 			'resnet18', 'resnet50', 'resnet101', 'resnet152', 'vgg11_bn',
-			'densenet121', 'inception_v3', 'matchboxnet'
+			'densenet121', 'inception_v3', 'matchboxnet', 'simple-ensemble'
 		]
 	)
 	arg_parser.add_argument('-d', '--sample-duration', type = float, default = 2.0)
@@ -54,6 +55,8 @@ if __name__ == '__main__':
 	arg_parser.add_argument('--samples-per-class', type = str, default = 'min')
 	arg_parser.add_argument('--age-range', type = str, default = 'none')
 	arg_parser.add_argument('--out', type = str, default = '_out')
+	arg_parser.add_argument('--n-simple-models', type = int, default = 20)
+	arg_parser.add_argument('--ensemble-voting', type = str, choices = ['soft', 'hard'], default = 'soft')
 	args = arg_parser.parse_args()
 
 	with open(args.split_config_path, mode = 'rt') as split_file:
@@ -70,6 +73,13 @@ if __name__ == '__main__':
 			batch_size = args.batch_size,
 			learn_rate = args.learning_rate,
 			samples_per_class = args.samples_per_class
+		)
+	elif args.arch == 'simple-ensemble':
+		trainer = SimpleClfTrainer(
+			data_path = args.data_path,
+			data_config = data_split_config,
+			n_models = args.n_simple_models,
+			voting = args.ensemble_voting
 		)
 	else:
 		trainer = CNNTrainer(
