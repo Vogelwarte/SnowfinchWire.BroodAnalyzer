@@ -59,6 +59,7 @@ class ModelLoader(ABC):
 
 	def set_next(self, next_loader):
 		self.next = next_loader
+		return next_loader
 
 	def load_model(self, path: str) -> SnowfinchBroodClassifier:
 		with zipfile.ZipFile(path) as archive:

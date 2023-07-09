@@ -1,9 +1,14 @@
 import argparse
 import subprocess
 import sys
-import yaml
 from datetime import datetime
 from pathlib import Path
+
+import yaml
+
+from sfw_brood.model import ModelType
+from sfw_brood.simple_size_clf.model import SimpleClfLoader
+from sfw_brood.simple_size_clf.preprocessing import prepare_feeding_data
 
 
 def detect_feeding(path: str, model_type: str, model_path: str, rec_path: str, out_path: str):
@@ -59,8 +64,8 @@ def load_config(path: str) -> dict:
 def main():
 	arg_parser = argparse.ArgumentParser()
 	arg_parser.add_argument(
-		'-r', '--recording-path', type = str, default = None,
-		help = 'Path to audio file or directory'
+		'-i', '--input-path', type = str, default = None,
+		help = 'Path to input data: audio file, directory with audio files or directory with feeding stats'
 	)
 	arg_parser.add_argument('-c', '--config-path', type = str, help = 'Path to config file', default = None)
 	arg_parser.add_argument('-l', '--label-path', type = str, default = None)
@@ -79,8 +84,8 @@ def main():
 		config = load_config(args.config_path)
 		args.__dict__.update(config)
 
-	if args.recording_path is None or args.model_path is None:
-		print('Missing required arguments: recording_path or model')
+	if args.input_path is None or args.model_path is None:
+		print('Missing required arguments: input_path or model')
 		exit(1)
 
 	label_paths = None if args.label_path is None else [Path(args.label_path)]
@@ -91,7 +96,7 @@ def main():
 			path = args.feeding_detector_path,
 			model_type = args.feeding_detector_type,
 			model_path = args.feeding_detector_model,
-			rec_path = args.recording_path,
+			rec_path = args.input_path,
 			out_path = labels_path
 		)
 
@@ -106,7 +111,9 @@ def main():
 	from sfw_brood.nemo.model import MatchboxNetLoader
 
 	model_loader = CNNLoader()
-	model_loader.set_next(MatchboxNetLoader())
+	model_loader \
+		.set_next(MatchboxNetLoader()) \
+		.set_next(SimpleClfLoader())
 
 	model_path = Path(args.model_path)
 	if model_path.is_dir():
@@ -114,20 +121,30 @@ def main():
 	else:
 		model_files = [model_path]
 
+	input_path = Path(args.input_path)
+
 	try:
 		for model_file in model_files:
 			print(f'Loading model {model_file.as_posix()}')
-
 			model = model_loader.load_model(model_file.as_posix())
-			inference = Inference(model)
 
-			pred_result = inference.predict(
-				paths = [Path(args.recording_path)], n_workers = args.n_workers,
-				agg_period_hours = args.period_hours, overlap_hours = args.overlap_hours,
-				multi_target_threshold = args.mt_threshold, label_paths = label_paths
-			)
-
-			pred_result.save(out_path.joinpath(model_file.stem))
+			if model.model_type == ModelType.SIMPLE_SIZE_CLF:
+				feeding_data = prepare_feeding_data(
+					feeding_stats_path = input_path.joinpath('feeding-stats.csv'),
+					brood_data_path = input_path.joinpath('snowfinch-broods.csv')
+				)
+				pred_result = model.predict(feeding_data, n_workers = 0)
+				result_path = out_path.joinpath(model_file.stem).joinpath('results.csv')
+				result_path.parent.mkdir(exist_ok = True, parents = True)
+				pred_result.to_csv(result_path)
+			else:
+				inference = Inference(model)
+				pred_result = inference.predict(
+					paths = [input_path], n_workers = args.n_workers,
+					agg_period_hours = args.period_hours, overlap_hours = args.overlap_hours,
+					multi_target_threshold = args.mt_threshold, label_paths = label_paths
+				)
+				pred_result.save(out_path.joinpath(model_file.stem))
 
 		print(f'Prediction results saved to directory {out_path}')
 
