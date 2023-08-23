@@ -12,6 +12,7 @@ def __timedelta_to_hours__(td: timedelta) -> int:
 	return td.days * 24 + td.seconds // 3600
 
 
+# rec_df columns: brood_id, datetime
 def assign_recording_periods(
 		rec_df: pd.DataFrame, period_hours: int, period_map: Optional[dict] = None, overlap_hours = 0
 ) -> Tuple[pd.DataFrame, dict]:

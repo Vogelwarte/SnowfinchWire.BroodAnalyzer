@@ -22,23 +22,25 @@ def find_brood_metrics(brood_id: str, day: date, brood_df: pd.DataFrame) -> Tupl
 	return np.NaN, np.NaN, np.NaN
 
 
-def prepare_feeding_data(feeding_stats_path: Path, brood_data_path: Path) -> pd.DataFrame:
+# brood_data columns: brood_id, datetime, age_min, age_max, [size]
+def prepare_feeding_data(feeding_stats_path: Path, brood_data: pd.DataFrame) -> pd.DataFrame:
 	feeding_stats = pd.read_csv(feeding_stats_path)
 	feeding_stats['datetime'] = pd.to_datetime(feeding_stats['datetime'])
 	feeding_stats['day'] = feeding_stats['datetime'].apply(lambda dt: dt.date())
 
-	brood_df = pd.read_csv(brood_data_path)
-	brood_df['datetime'] = pd.to_datetime(brood_df['datetime'])
-	brood_df['day'] = brood_df['datetime'].apply(lambda dt: dt.date())
-
+	brood_data['day'] = pd.to_datetime(brood_data['datetime']).apply(lambda dt: dt.date())
 	feeding_stats[['age_min', 'age_max', 'size']] = feeding_stats.apply(
-		lambda row: find_brood_metrics(row['brood_id'], row['day'], brood_df),
+		lambda row: find_brood_metrics(row['brood_id'], row['day'], brood_data),
 		axis = 1, result_type = 'expand'
 	)
+	brood_data.drop(columns = 'day', inplace = True)
+
 	if feeding_stats['size'].isna().all():
 		feeding_stats.drop(columns = 'size', inplace = True)
+
 	feeding_stats = feeding_stats.dropna()
-	feeding_stats = feeding_stats[(feeding_stats['size'] >= 2) & (feeding_stats['size'] <= 5)]
+	if 'size' in feeding_stats.columns:
+		feeding_stats = feeding_stats[(feeding_stats['size'] >= 2) & (feeding_stats['size'] <= 5)]
 
 	feeding_stats_daily = feeding_stats[['brood_id', 'day', 'duration', 'feeding_count']] \
 		.groupby(['brood_id', 'day']) \

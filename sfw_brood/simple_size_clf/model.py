@@ -11,7 +11,7 @@ class SimpleBroodSizeClassifier(SnowfinchBroodClassifier):
 	def __init__(self, trained_models: List[EnsemleClassifier], model_info: dict):
 		super().__init__(ModelType.SIMPLE_SIZE_CLF, model_info)
 		self.models = trained_models
-		self.voting = model_info['voting']
+		self.voting = model_info['voing']
 		self.x_features = model_info['features']
 
 	# assume that feeding_data has brood_id, datetime and x_features columns
@@ -24,6 +24,10 @@ class SimpleBroodSizeClassifier(SnowfinchBroodClassifier):
 	def _serialize_(self, path: str):
 		with open(path, mode = 'wb') as out_file:
 			pickle.dump(self.models, out_file)
+
+	@property
+	def classification_modes(self) -> List[str]:
+		return [model.name for model in self.models]
 
 
 class SimpleClfLoader(ModelLoader):

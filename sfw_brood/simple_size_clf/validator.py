@@ -34,5 +34,6 @@ class SimpleClfValidator(ModelValidator):
 			save_confusion_matrix(cm, out_dir.joinpath(label_col))
 
 		save_test_summary(target = 'size', classes = self.label_columns, scores = clf_scores, out_dir = out_dir)
+		pred_df.to_csv(out_dir.joinpath('pred.csv'))
 
 		return clf_scores

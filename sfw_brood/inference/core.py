@@ -108,6 +108,50 @@ class SnowfinchBroodPrediction:
 # 	plt.savefig(out.joinpath(f'{brood_id}-lines.png'))
 
 
+def aggregate_by_brood_periods(
+		pred_df: pd.DataFrame, classes: list, period_hours: int, overlap_hours = 0,
+		multi_target = False, multi_target_threshold = 0.7, period_map = None
+) -> pd.DataFrame:
+	pred_df['datetime'] = pd.to_datetime(pred_df['datetime'])
+	pred_df, _ = assign_recording_periods(
+		pred_df, period_hours, overlap_hours = overlap_hours, period_map = period_map
+	)
+
+	# print(pred_df[['rec_path', 'brood_id', 'datetime', 'period_start', 'n_samples']])
+
+	agg_map = { }
+	test_cols = ['brood_id', 'period_start']
+	if 'rec_path' in pred_df.columns:
+		agg_map['rec_path'] = 'count'
+		test_cols.append('rec_path')
+
+	for col in pred_df.columns:
+		if 'n_samples' in col:
+			test_cols.append(col)
+			agg_map[col] = 'sum'
+
+	pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
+	if 'rec_path' in pred_agg_df.columns:
+		pred_agg_df.rename(columns = { 'rec_path': 'rec_count' }, inplace = True)
+
+	if multi_target:
+		for cls in classes:
+			pred_agg_df[cls] = np.where(
+				pred_agg_df[f'{cls}_n_samples'] / pred_agg_df['n_samples'] > multi_target_threshold, 1, 0
+			)
+	else:
+		for cls in classes:
+			pred_agg_df[cls] = pred_agg_df[f'{cls}_n_samples'] / pred_agg_df['n_samples']
+
+		cls_max = pred_agg_df[classes].idxmax(axis = 1)
+		for cls in classes:
+			pred_agg_df[cls] = np.where(cls_max == cls, 1, 0)
+
+	pred_agg_df['class'] = pred_agg_df[classes].idxmax(axis = 1)
+
+	return pred_agg_df
+
+
 class Inference:
 	def __init__(self, model: SnowfinchBroodClassifier):
 		self.model = model
@@ -140,40 +184,10 @@ class Inference:
 			self, pred_df: pd.DataFrame, period_hours: int, overlap_hours = 0,
 			multi_target_threshold = 0.7, period_map = None
 	) -> pd.DataFrame:
-		pred_df['datetime'] = pd.to_datetime(pred_df['datetime'])
-		pred_df, _ = assign_recording_periods(
-			pred_df, period_hours, overlap_hours = overlap_hours, period_map = period_map
+		return aggregate_by_brood_periods(
+			pred_df, self.classes, period_hours, overlap_hours,
+			self.model.model_info['multi_target'], multi_target_threshold, period_map
 		)
-
-		# print(pred_df[['rec_path', 'brood_id', 'datetime', 'period_start', 'n_samples']])
-
-		agg_map = { 'rec_path': 'count' }
-		test_cols = ['rec_path', 'brood_id', 'period_start']
-
-		for col in pred_df.columns:
-			if 'n_samples' in col:
-				test_cols.append(col)
-				agg_map[col] = 'sum'
-
-		pred_agg_df = pred_df[test_cols].groupby(['brood_id', 'period_start']).agg(agg_map).reset_index()
-		pred_agg_df = pred_agg_df.rename(columns = { 'rec_path': 'rec_count' })
-
-		if self.model.model_info['multi_target']:
-			for cls in self.classes:
-				pred_agg_df[cls] = np.where(
-					pred_agg_df[f'{cls}_n_samples'] / pred_agg_df['n_samples'] > multi_target_threshold, 1, 0
-				)
-		else:
-			for cls in self.classes:
-				pred_agg_df[cls] = pred_agg_df[f'{cls}_n_samples'] / pred_agg_df['n_samples']
-
-			cls_max = pred_agg_df[self.classes].idxmax(axis = 1)
-			for cls in self.classes:
-				pred_agg_df[cls] = np.where(cls_max == cls, 1, 0)
-
-		pred_agg_df['class'] = pred_agg_df[self.classes].idxmax(axis = 1)
-
-		return pred_agg_df
 
 	def __label_path_for_rec__(self, rec_path: Path) -> Path:
 		# return rec_path.parent.joinpath(f'{rec_path.stem}.txt')

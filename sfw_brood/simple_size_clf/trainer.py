@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pandas as pd
+
 from sfw_brood.model import ModelTrainer
 from sfw_brood.simple_size_clf.ensemble_clf import EnsemleClassifier
 from sfw_brood.simple_size_clf.model import SimpleBroodSizeClassifier
@@ -20,7 +22,7 @@ class SimpleClfTrainer(ModelTrainer):
 
 		feeding_data = prepare_feeding_data(
 			feeding_stats_path = self.data_path.joinpath('feeding-stats.csv'),
-			brood_data_path = self.data_path.joinpath('snowfinch-broods.csv')
+			brood_data = pd.read_csv(self.data_path.joinpath('snowfinch-broods.csv'))
 		)
 
 		self.label_columns = generate_size_labels(

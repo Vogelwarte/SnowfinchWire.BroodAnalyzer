@@ -190,24 +190,23 @@ def __map_class_to_group__(cls: float, groups: List[Tuple[float, float]], group_
 	return 'none'
 
 
-# this function modifies input data frame
-def __groups_to_1hot__(groups_df: pd.DataFrame) -> pd.DataFrame:
-	groups_df = groups_df \
-		.sort_values(by = 'class') \
+def classes_to_1hot(groups_df: pd.DataFrame, cls_col = 'class') -> pd.DataFrame:
+	out_df = groups_df \
+		.sort_values(by = cls_col) \
 		.reset_index() \
 		.drop(columns = 'index')
 
 	groups_encoder = OneHotEncoder()
-	groups_1hot = groups_encoder.fit_transform(groups_df['class'].values.reshape(-1, 1))
+	groups_1hot = groups_encoder.fit_transform(out_df[cls_col].values.reshape(-1, 1))
 	groups_1hot_df = pd.DataFrame(
 		data = groups_1hot.toarray(),
 		columns = groups_encoder.categories_
 	)
 
 	group_1hot_columns = [col[0] for col in groups_1hot_df.columns]
-	groups_df[group_1hot_columns] = groups_1hot_df[group_1hot_columns]
+	out_df[group_1hot_columns] = groups_1hot_df[group_1hot_columns]
 
-	return groups_df
+	return out_df
 
 
 def group_sizes(size_df: pd.DataFrame, groups: List[Tuple[float, float]]) -> Tuple[pd.DataFrame, List[str]]:
@@ -219,7 +218,7 @@ def group_sizes(size_df: pd.DataFrame, groups: List[Tuple[float, float]]) -> Tup
 	size_group_df = size_df.rename(columns = { 'class': 'size' })
 	size_group_df['class'] = size_group_df['size'].apply(map_size)
 
-	return __groups_to_1hot__(size_group_df), group_labels
+	return classes_to_1hot(size_group_df), group_labels
 
 
 def label_class_groups(groups: List[Tuple[float, float]]) -> List[str]:
@@ -252,7 +251,7 @@ def group_ages(
 
 		age_group_df['class_min'] = age_group_df['age_min'].apply(map_age)
 		age_group_df['class_max'] = age_group_df['age_max'].apply(map_age)
-		age_group_df = __groups_to_1hot__(
+		age_group_df = classes_to_1hot(
 			groups_df = age_group_df[age_group_df['class_min'] == age_group_df['class_max']] \
 				.drop(columns = ['class_min']) \
 				.rename(columns = { 'class_max': 'class' })
