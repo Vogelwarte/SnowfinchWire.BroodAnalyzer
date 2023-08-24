@@ -42,7 +42,7 @@ def load_config(path: str) -> dict:
 
 	try:
 		args = {
-			'recording_path': config['data']['recordings'],
+			'input_path': config['data']['recordings'],
 			'label_path': config['data'].get('labels', None),
 			'model_path': config['model']['path'],
 			'n_workers': config['model'].get('n_workers', 10),

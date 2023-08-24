@@ -33,7 +33,7 @@ def parse_range_str(range_str: str, throw_error = False) -> Optional[Tuple[float
 			return None
 
 
-if __name__ == '__main__':
+def main():
 	arg_parser = argparse.ArgumentParser()
 	arg_parser.add_argument('data_path', type = str)
 	arg_parser.add_argument('audio_path', type = str)
@@ -111,3 +111,7 @@ if __name__ == '__main__':
 				trainer.train_model_for_age(out_dir = f'{args.out}/BA__{make_time_str()}')
 		except Exception as e:
 			print(e)
+
+
+if __name__ == '__main__':
+	main()

@@ -1,0 +1,26 @@
+New-Item -ItemType Directory -Path .download -Force
+
+# Common submodule
+Invoke-WebRequest -Uri https://github.com/Vogelwarte/SnowfinchWire.Common/archive/refs/tags/release-brood-analyzer.zip -OutFile .download/common.zip
+Expand-Archive .download/common.zip -DestinationPath .download/
+New-Item -ItemType Directory -Path sfw_brood/common -Force
+Copy-Item -Recurse -Path .download/SnowfinchWire.Common-release-brood-analyzer/* -Destination sfw_brood/common/
+
+# BeggingCallsAnalyzer
+Invoke-WebRequest -Uri https://github.com/Vogelwarte/SnowfinchWire.BeggingCallsAnalyzer/archive/refs/tags/1.0.zip -OutFile .download/sfw-bca.zip
+Expand-Archive .download/sfw-bca.zip -DestinationPath .download/
+New-Item -ItemType Directory -Path feeding-detector -Force
+Copy-Item -Recurse -Path .download/SnowfinchWire.BeggingCallsAnalyzer-1.0/* -Destination feeding-detector/
+
+# BeggingCallsAnalyzer common submodule
+Invoke-WebRequest -Uri https://github.com/Vogelwarte/SnowfinchWire.Common/archive/refs/tags/v1.0-beggingcallsanalyzer.zip -OutFile .download/bca-common.zip
+Expand-Archive .download/bca-common.zip -DestinationPath .download/
+New-Item -ItemType Directory -Path feeding-detector/beggingcallsanalyzer/common -Force
+Copy-Item -Recurse -Path .download/SnowfinchWire.Common-1.0-beggingcallsanalyzer/* -Destination feeding-detector/beggingcallsanalyzer/common/
+
+Remove-Item -Recurse .download
+
+python -m pip install --upgrade pip
+python -m pip install -r feeding-detector/requirements.txt
+python -m pip install Cython
+python -m pip install -r requirements.txt --force-reinstall
