@@ -60,6 +60,7 @@ class InferenceValidator(ABC):
 		)
 		samples_test_data, test_data = self._aggregate_test_data_(test_data, classes, is_multi_target)
 		test_data['class'] = test_data[classes].idxmax(axis = 1)
+		test_data['class_2'] = test_data[reversed(classes)].idxmax(axis = 1)
 
 		pred = inference.predict(
 			audio_paths, n_workers, agg_period_hours = self.period_hours, overlap_hours = self.overlap_hours,
@@ -171,9 +172,11 @@ class BroodAgeInferenceValidator(InferenceValidator):
 					age_test_agg[age_group] / age_test_agg['rec_count'] > self.multi_target_threshold, 1, 0
 				)
 		else:
-			cls_max = age_test_agg[classes].idxmax(axis = 1)
-			for age_group in classes:
-				age_test_agg[age_group] = np.where(cls_max == age_group, 1, 0)
+			cls_max_samples = age_test_agg[classes].max(axis = 1)
+			age_test_agg[classes] = age_test_agg[classes].floordiv(cls_max_samples, axis = 0)
+			# cls_max = age_test_agg[classes].idxmax(axis = 1)
+			# for age_group in classes:
+			# 	age_test_agg[age_group] = np.where(cls_max == age_group, 1, 0)
 
 			age_test_df['n_classes'] = age_test_df[classes].sum(axis = 1)
 			age_test_df = age_test_df[age_test_df['n_classes'] == 1]

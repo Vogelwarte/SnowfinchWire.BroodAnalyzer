@@ -1,14 +1,16 @@
 data:
-  recordings: /home/gardzielb/test3
-  labels: /home/gardzielb/test_labels
+  recordings: /home/gardzielb/test2
+#  labels: /home/gardzielb/test_labels
 model:
   path: /home/gardzielb/sfw-brood-work/may/models
   n_workers: 20
-output_dir: /home/gardzielb/sfw-brood-work/may/integration/config
+output_dir: /home/gardzielb/sfw-brood-work/june/integration/final
 aggregation:
   period_hours: 48
-  overlap_hours: 0
-#feeding_detector:
-#  type: fe
-#  path: /home/gardzielb/janek/SnowfinchWire.BeggingCallsAnalyzer
-#  model: /home/gardzielb/model
+  overlap_hours: 24
+feeding_detector:
+  type: fe
+  path: /home/gardzielb/janek/SnowfinchWire.BeggingCallsAnalyzer
+  args:
+    model_path: /home/gardzielb/janek/SnowfinchWire.BeggingCallsAnalyzer/svm_win_len_0.5_overlap_0.7_win_type_hamming.skops
+    extension: WAV

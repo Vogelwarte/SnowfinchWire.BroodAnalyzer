@@ -1,0 +1,15 @@
+data:
+  recordings: D:/MINI/magisterka/Snowfinch/data
+model:
+  path: D:/MINI/magisterka/Snowfinch/models/age-cnn.zip
+  n_workers: 10
+output_dir: D:/MINI/magisterka/Snowfinch/results/demo
+aggregation:
+  period_hours: 48
+  overlap_hours: 24
+feeding_detector:
+  type: fe
+  path: D:/Devel/Repos/PycharmProjects/SnowfinchWire.BeggingCallsAnalyzer
+  args:
+    model_path: D:/MINI/magisterka/Snowfinch/models/svm_win_len_0.5_overlap_0.7_win_type_hamming.skops
+    extension: WAV
