@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 from pandas.errors import SettingWithCopyWarning
 
 from sfw_brood.cnn.trainer import CNNTrainer
-from sfw_brood.nemo.trainer import MatchboxNetTrainer
+# from sfw_brood.nemo.trainer import MatchboxNetTrainer
 from sfw_brood.simple_size_clf.trainer import SimpleClfTrainer
 
 warnings.simplefilter(action = 'ignore', category = FutureWarning)
@@ -36,7 +36,7 @@ def parse_range_str(range_str: str, throw_error = False) -> Optional[Tuple[float
 def main():
 	arg_parser = argparse.ArgumentParser()
 	arg_parser.add_argument('data_path', type = str)
-	arg_parser.add_argument('audio_path', type = str)
+	arg_parser.add_argument('--audio-path', type = str, default = None)
 	arg_parser.add_argument(
 		'-a', '--arch', type = str, default = 'resnet18', choices = [
 			'resnet18', 'resnet50', 'resnet101', 'resnet152', 'vgg11_bn',
@@ -63,17 +63,19 @@ def main():
 		data_split_config = json.load(split_file)
 
 	if args.arch == 'matchboxnet':
-		trainer = MatchboxNetTrainer(
-			dataset_path = args.data_path,
-			audio_path = args.audio_path,
-			data_config = data_split_config,
-			sample_duration = args.sample_duration,
-			n_epochs = args.n_epochs,
-			n_workers = args.n_workers,
-			batch_size = args.batch_size,
-			learn_rate = args.learning_rate,
-			samples_per_class = args.samples_per_class
-		)
+		print('MatchboxNet is not supported in the current version')
+		exit(1)
+		# trainer = MatchboxNetTrainer(
+		# 	dataset_path = args.data_path,
+		# 	audio_path = args.audio_path,
+		# 	data_config = data_split_config,
+		# 	sample_duration = args.sample_duration,
+		# 	n_epochs = args.n_epochs,
+		# 	n_workers = args.n_workers,
+		# 	batch_size = args.batch_size,
+		# 	learn_rate = args.learning_rate,
+		# 	samples_per_class = args.samples_per_class
+		# )
 	elif args.arch == 'simple-ensemble':
 		trainer = SimpleClfTrainer(
 			data_path = args.data_path,
@@ -82,6 +84,10 @@ def main():
 			voting = args.ensemble_voting
 		)
 	else:
+		if args.audio_path is None:
+			print('Audio path not specified, cannot train CNN model')
+			exit(1)
+
 		trainer = CNNTrainer(
 			data_path = args.data_path,
 			audio_path = args.audio_path,
@@ -102,13 +108,16 @@ def main():
 
 	with trainer:
 		try:
-			if args.target == 'size':
+			if args.arch == 'simple-ensemble':
 				trainer.train_model_for_size(out_dir = f'{args.out}/BS__{make_time_str()}')
-			elif args.target == 'age':
-				trainer.train_model_for_age(out_dir = f'{args.out}/BA__{make_time_str()}')
 			else:
-				trainer.train_model_for_size(out_dir = f'{args.out}/BS__{make_time_str()}')
-				trainer.train_model_for_age(out_dir = f'{args.out}/BA__{make_time_str()}')
+				if args.target == 'size':
+					trainer.train_model_for_size(out_dir = f'{args.out}/BS__{make_time_str()}')
+				elif args.target == 'age':
+					trainer.train_model_for_age(out_dir = f'{args.out}/BA__{make_time_str()}')
+				else:
+					trainer.train_model_for_size(out_dir = f'{args.out}/BS__{make_time_str()}')
+					trainer.train_model_for_age(out_dir = f'{args.out}/BA__{make_time_str()}')
 		except Exception as e:
 			print(e)
 

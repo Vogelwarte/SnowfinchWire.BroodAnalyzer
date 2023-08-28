@@ -11,7 +11,7 @@ class SimpleBroodSizeClassifier(SnowfinchBroodClassifier):
 	def __init__(self, trained_models: List[EnsemleClassifier], model_info: dict):
 		super().__init__(ModelType.SIMPLE_SIZE_CLF, model_info)
 		self.models = trained_models
-		self.voting = model_info['voing']
+		self.voting = model_info['voting']
 		self.x_features = model_info['features']
 
 	# assume that feeding_data has brood_id, datetime and x_features columns

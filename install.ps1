@@ -1,3 +1,29 @@
+$python_path = $null
+try
+{
+	$pversions = py -0p
+	$version = $pversions.Where( {$_.Contains("3.9") }, 'First')
+	if([bool] $version)
+	{
+		$python_path = $version.Split("  ")[-1].Trim()
+	}
+}
+catch
+{
+	echo "py launcher not found"
+}
+
+if ($null -eq $python_path)
+{
+
+	echo "Python 3.9 not found, make sure it is installed and added to PATH"
+	echo "ERROR"
+	exit
+}
+echo "Found Python 3.9 at ${python_path}"
+
+& $python_path --version
+
 New-Item -ItemType Directory -Path .download -Force
 
 # Common submodule
@@ -20,7 +46,7 @@ Copy-Item -Recurse -Path .download/SnowfinchWire.Common-1.0-beggingcallsanalyzer
 
 Remove-Item -Recurse .download
 
-python -m pip install --upgrade pip
-python -m pip install -r feeding-detector/requirements.txt
-python -m pip install Cython
-python -m pip install -r requirements.txt --force-reinstall
+& $python_path -m pip install --upgrade pip
+& $python_path -m pip install -r feeding-detector/requirements.txt
+& $python_path -m pip install Cython
+& $python_path -m pip install -r requirements.txt --force-reinstall

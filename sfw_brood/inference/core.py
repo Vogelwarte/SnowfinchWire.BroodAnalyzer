@@ -21,17 +21,21 @@ class SnowfinchBroodPrediction:
 	target: str
 	classes: List[str]
 	sample_results: pd.DataFrame
-	rec_results: pd.DataFrame
+	rec_results: Optional[pd.DataFrame]
 	brood_periods_results: pd.DataFrame
 
 	def save(self, out: Union[Path, str], brood_period_truth: Optional[pd.DataFrame] = None):
 		out = Path(out)
 		out.mkdir(parents = True, exist_ok = True)
 		self.sample_results.to_csv(out.joinpath('sample-preds.csv'), index = False)
-		self.rec_results.sort_values(by = ['brood_id', 'datetime']).to_csv(out.joinpath('rec-preds.csv'), index = False)
 		self.brood_periods_results.sort_values(by = ['brood_id', 'period_start']).to_csv(
 			out.joinpath('brood-period-preds.csv'), index = False
 		)
+
+		if self.rec_results is not None:
+			self.rec_results \
+				.sort_values(by = ['brood_id', 'datetime']) \
+				.to_csv(out.joinpath('rec-preds.csv'), index = False)
 
 		for brood in self.brood_periods_results['brood_id'].unique():
 			brood_truth = None
@@ -190,8 +194,8 @@ class Inference:
 		)
 
 	def __label_path_for_rec__(self, rec_path: Path) -> Path:
-		# return rec_path.parent.joinpath(f'{rec_path.stem}.txt')
-		return rec_path.parent.joinpath(f'predicted_{rec_path.stem}.txt')
+		return rec_path.parent.joinpath(f'{rec_path.stem}.txt')
+		# return rec_path.parent.joinpath(f'predicted_{rec_path.stem}.txt')
 
 	def __prepare_data__(self, audio_paths: List[Path], label_paths: Optional[List[Path]]) -> pd.DataFrame:
 		if label_paths is None:

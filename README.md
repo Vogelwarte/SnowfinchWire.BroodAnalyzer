@@ -66,12 +66,11 @@ All the other attributes are optional and each of them corresponds to one of the
 
 The input directory for a simple brood size classifier should contain the following files:
 * _feeding-stats.csv_ - a file with feeding statistics produced by _SnowfinchWire.BeggingCallsAnalyzer_,
-* _snowfinch-broods.csv_ - a file with true brood information; the following columns are required:
+* _brood-age.csv_ - a file with age information; this file is produced by running age classification with 
+  a CNN model - it is called _brood-period-preds.csv_; the following columns are required:
   * _brood_id_ - brood identifier, string
-  * _datetime_ - date and time in ISO format
-  * _age_min_ - age of the youngest nestling, floating point number
-  * _age_max_ - age of the eldest nestling, floating point number
-**TODO: implement!**
+  * _period_start_ - date and time in ISO format
+  * _class_ - age of the youngest nestling, floating point number
 
 ### Embedded feeding detection
 
@@ -112,6 +111,18 @@ several command line arguments and options, which partly depend on the model typ
   Set to _resnet18_ by default,
 * `--out <output_directory>` - a path to a directory where prediction results are to be stored, `_out` by default.
 
+### Brood information file
+
+In order to train any model, brood information file is necessary. It is a .csv file with the following columns:
+* _brood_id_ - brood identifier, string
+* _datetime_ - date and time in ISO format
+* _age_min_ - age of the youngest nestling, floating point number
+* _age_max_ - age of the eldest nestling, floating point number
+* _size_ - true brood size, integer
+
+A single line of the file should describe one of the broods used in the training process at a specific time. For 
+each brood there should be at least one line per day of recordings.
+
 ### Simple size classifier
 
 If the user chooses to train the simple size classifier, they can specify the following additional options:
@@ -122,16 +133,11 @@ If the user chooses to train the simple size classifier, they can specify the fo
 
 The dataset definition directory has to contain the following files:
 * _feeding-stats.csv_ - a file with feeding statistics produced by _SnowfinchWire.BeggingCallsAnalyzer_,
-* _snowfinch-broods.csv_ - a file with true brood information; the following columns are required:
-  * _brood_id_ - brood identifier, string
-  * _datetime_ - date and time in ISO format
-  * _age_min_ - age of the youngest nestling, floating point number
-  * _age_max_ - age of the eldest nestling, floating point number
-  * _size_ - true brood size, integer
+* _snowfinch-broods.csv_ - a brood information file descrived in the previoud section
 
 ### OpenSoundscape
 
-Training a MatchboxNet model or one of OpenSoundscape CNNs requires additional command line argument, `audio_path`. 
+Training a CNN model from OpenSoundscape framework requires an additional command line option: `--audio-path <path>`. 
 It has to specify a path to a directory containg audio recordings. Moreover, there are a few more options:
 * `-d <duration>` - an audio sample duration in seconds for the model to work on, 2 by default,
 * `-n <n_epochs>` - a number of training epochs, 10 by default,
@@ -147,3 +153,25 @@ It has to specify a path to a directory containg audio recordings. Moreover, the
 The dataset definition directory has to contain the following files:
 * _brood-size.csv_
 * _brood-age.csv_
+
+These files can be created using the following commands:
+```shell
+python -m sfw_brood.describe_recordings \
+  --brood-data <path/to/brood-information-file.csv> \
+  -o <path/to/snowfinch-recordings.csv> \
+  <path/to/recordings>
+
+python -m sfw_brood.export_data \
+  -s <sample duration in seconds> \
+  -o <sample overlap in seconds> \
+  -j <number of processes> \
+  --rec-data <path/to/snowfinch-recordings.csv> \
+  --audio-out-path <path/to/audio-output> \
+  <path/to/recordings> <path/to/output>
+```
+
+The first command will produce the file _snowfinch-recordings.csv_ in a location specified by the user and the 
+second will use it to prepare data for OpenSoundscapre training process. As a result, the recordings will be sliced 
+to samples of the given length with the requested overlap. The samples will be stored under the path specified by 
+the `--audio-out-path` option. The _brood-size.csv_ and _brood-age.csv_ files will be created under the path 
+specified by the last argument.

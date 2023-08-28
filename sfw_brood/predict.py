@@ -4,9 +4,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import pandas as pd
 import yaml
 
 from sfw_brood.model import ModelType
+from sfw_brood.simple_size_clf.inference import SimpleSizeInference
 from sfw_brood.simple_size_clf.model import SimpleClfLoader
 from sfw_brood.simple_size_clf.preprocessing import prepare_feeding_data
 
@@ -108,12 +110,12 @@ def main():
 
 	from sfw_brood.inference.core import Inference
 	from sfw_brood.cnn.model import CNNLoader
-	from sfw_brood.nemo.model import MatchboxNetLoader
+	# from sfw_brood.nemo.model import MatchboxNetLoader
 
 	model_loader = CNNLoader()
 	model_loader \
-		.set_next(MatchboxNetLoader()) \
-		.set_next(SimpleClfLoader())
+		.set_next(SimpleClfLoader()) \
+		# .set_next(MatchboxNetLoader())
 
 	model_path = Path(args.model_path)
 	if model_path.is_dir():
@@ -129,14 +131,23 @@ def main():
 			model = model_loader.load_model(model_file.as_posix())
 
 			if model.model_type == ModelType.SIMPLE_SIZE_CLF:
-				feeding_data = prepare_feeding_data(
+				inference = SimpleSizeInference(model)
+				preds = inference.predict(
 					feeding_stats_path = input_path.joinpath('feeding-stats.csv'),
-					brood_data_path = input_path.joinpath('snowfinch-broods.csv')
+					age_pred_path = input_path.joinpath('brood-age.csv'),
+					period_hours = args.period_hours, overlap_hours = args.overlap_hours
 				)
-				pred_result = model.predict(feeding_data, n_workers = 0)
-				result_path = out_path.joinpath(model_file.stem).joinpath('results.csv')
-				result_path.parent.mkdir(exist_ok = True, parents = True)
-				pred_result.to_csv(result_path)
+				for pred in preds:
+					pred.save(out_path.joinpath(model_file.stem).joinpath(pred.model_name))
+
+				# feeding_data = prepare_feeding_data(
+				# 	feeding_stats_path = input_path.joinpath('feeding-stats.csv'),
+				# 	brood_data = pd.read_csv(input_path.joinpath('brood-age.csv'))
+				# )
+				# pred_result = model.predict(feeding_data, n_workers = 0)
+				# result_path = out_path.joinpath(model_file.stem).joinpath('results.csv')
+				# result_path.parent.mkdir(exist_ok = True, parents = True)
+				# pred_result.to_csv(result_path)
 			else:
 				inference = Inference(model)
 				pred_result = inference.predict(

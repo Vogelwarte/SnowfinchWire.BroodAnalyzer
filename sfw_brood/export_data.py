@@ -10,7 +10,7 @@ if __name__ == '__main__':
 	arg_parser = argparse.ArgumentParser()
 	arg_parser.add_argument('data_path', type = str)
 	arg_parser.add_argument('out_path', type = str)
-	arg_parser.add_argument('-w', '--work-dir', type = str)
+	arg_parser.add_argument('-a', '--audio-out-path', type = str)
 	arg_parser.add_argument('-o', '--overlap', type = float, default = 0.0)
 	arg_parser.add_argument('-s', '--sample-len', type = float, default = 2.0)
 	arg_parser.add_argument('-j', '--n-jobs', type = int, default = 1)
@@ -21,7 +21,7 @@ if __name__ == '__main__':
 	start_time = datetime.now()
 
 	out_dir = f's{args.sample_len}-o{args.overlap}'
-	out_audio_path = Path(args.work_dir).joinpath(out_dir)
+	out_audio_path = Path(args.audio_out_path).joinpath(out_dir)
 	out_csv_path = Path(args.out_path).joinpath(out_dir)
 	out_bs_path = out_csv_path.joinpath('brood-size.csv')
 	out_ba_path = out_csv_path.joinpath('brood-age.csv')
@@ -38,6 +38,7 @@ if __name__ == '__main__':
 
 	rec_df = None if args.rec_data is None else pd.read_csv(args.rec_data)
 	dataset = discover_training_data(args.data_path, rec_df = rec_df)
+	print(f'Discovered dataset: {dataset.data_root}, brood sizes = {dataset.brood_sizes}')
 
 	bs_df, ba_df = prepare_training(
 		dataset, work_dir = out_audio_path, slice_duration_sec = args.sample_len, overlap_sec = args.overlap,

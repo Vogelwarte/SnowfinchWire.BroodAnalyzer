@@ -121,7 +121,7 @@ def __process_recording__(
 		print(f'Loading recording {rec_title}')
 
 	try:
-		recording = load_recording_data(rec_path, rec_info = rec_info)
+		recording = load_recording_data(rec_path, rec_info = rec_info, include_brood_info = True)
 		validate_recording_data(recording)
 		bs_df, ba_df = prepare_training_data(recording, brood_sizes, config)
 
