@@ -2,6 +2,10 @@
 
 Estimation of size and age of Eurasian Snowfinch broods based on audio recordings
 
+## Installation
+
+Run the script _install.ps1_ with PowerShell in order to install all the dependencies.
+
 ## Classification
 
 In order to run predictions, use `classify.py` script placed in the project root directory. The script accepts a
