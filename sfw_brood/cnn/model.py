@@ -40,4 +40,5 @@ class CNNLoader(ModelLoader):
 
 	def _deserialize_model_(self, path: str, meta_data: dict) -> SnowfinchBroodClassifier:
 		cnn = load_model(path)
+		cnn.preprocessor.pipeline.load_audio.set(sample_rate = 48_000)
 		return SnowfinchBroodCNN(cnn, meta_data)
