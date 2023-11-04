@@ -79,7 +79,8 @@ class SnowfinchBroodPrediction:
 
 			if brood_truth is not None:
 				period_df['true_class_1'] = [__search_by_period__(brood_truth, day, 'class')] * len(self.classes)
-				period_df['true_class_2'] = [__search_by_period__(brood_truth, day, 'class_2')] * len(self.classes)
+				if 'class_2' in brood_truth.columns:
+					period_df['true_class_2'] = [__search_by_period__(brood_truth, day, 'class_2')] * len(self.classes)
 
 			period_dfs.append(period_df)
 
@@ -88,7 +89,8 @@ class SnowfinchBroodPrediction:
 		sns.scatterplot(graph_df, x = 'day', y = 'class', size = 'score', sizes = (0, 100), legend = False, ax = axes)
 		if brood_truth is not None:
 			sns.lineplot(graph_df, x = 'day', y = 'true_class_1', color = 'r', ax = axes)
-			sns.lineplot(graph_df, x = 'day', y = 'true_class_2', color = 'r', ax = axes)
+			if 'true_class_2' in graph_df.columns:
+				sns.lineplot(graph_df, x = 'day', y = 'true_class_2', color = 'r', ax = axes)
 
 		plt.xticks(rotation = 90)
 		plt.title(f'{self.target.capitalize()} of brood {brood_id} predicted by {self.model_name} model')

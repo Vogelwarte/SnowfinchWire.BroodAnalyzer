@@ -183,7 +183,7 @@ def slice_audio(audio: np.ndarray, sample_rate: int, slice_len_sec: float, overl
 	return slices
 
 
-def __map_class_to_group__(cls: float, groups: List[Tuple[float, float]], group_labels: List[str]) -> str:
+def map_class_to_group(cls: float, groups: List[Tuple[float, float]], group_labels: List[str]) -> str:
 	for (low, high), label in zip(groups, group_labels):
 		if low <= float(cls) <= high:
 			return label
@@ -213,7 +213,7 @@ def group_sizes(size_df: pd.DataFrame, groups: List[Tuple[float, float]]) -> Tup
 	group_labels = label_class_groups(groups)
 
 	def map_size(size: float) -> str:
-		return __map_class_to_group__(size, groups, group_labels)
+		return map_class_to_group(size, groups, group_labels)
 
 	size_group_df = size_df.rename(columns = { 'class': 'size' })
 	size_group_df['class'] = size_group_df['size'].apply(map_size)
@@ -247,7 +247,7 @@ def group_ages(
 			.drop(columns = 'index')
 	else:
 		def map_age(age: float) -> str:
-			return __map_class_to_group__(age, groups, group_labels)
+			return map_class_to_group(age, groups, group_labels)
 
 		age_group_df['class_min'] = age_group_df['age_min'].apply(map_age)
 		age_group_df['class_max'] = age_group_df['age_max'].apply(map_age)
