@@ -169,7 +169,7 @@ jobs:
       - name: Explore results directory
         run: tree -I '*venv*|lightning_logs|nemo_experiments' --matchdirs .
       - name: Store results
-        run: cp -R _out/* "$WORK_DIR"/results/
+        run: cp -R _out/* "$WORK_DIR"/final-results/
 #      - name: Archive trained model
 #        uses: actions/upload-artifact@v3
 #        with:
