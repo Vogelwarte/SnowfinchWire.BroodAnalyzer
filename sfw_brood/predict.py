@@ -90,7 +90,7 @@ def main():
 		config = load_config(args.config_path)
 		print(f'Loaded config from file: {config}')
 		args.__dict__.update(config)
-		feeding_detector_args.update(config['feeding_detector_extra_args'])
+		feeding_detector_args.update(config.get('feeding_detector_extra_args', {}))
 
 	if args.input_path is None or args.model_path is None:
 		print('Missing required arguments: input_path or model')

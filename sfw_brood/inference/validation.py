@@ -127,7 +127,7 @@ class BroodSizeInferenceValidator(InferenceValidator):
 			size_test_df = pd.concat([size_test_df, size_1hot.astype('int')], axis = 1)
 			size_test_df.columns = [str(col) for col in size_test_df.columns]
 		else:
-			size_test_df, _ = group_sizes(test_data, groups = self.size_groups)
+			size_test_df, _ = group_sizes(size_test_df, groups = self.size_groups)
 
 		agg_map = { 'rec_path': 'count' }
 		for bs in classes:
