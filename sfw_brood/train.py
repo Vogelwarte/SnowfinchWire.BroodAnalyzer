@@ -50,13 +50,17 @@ def main():
 	arg_parser.add_argument('-l', '--learning-rate', type = float, default = 0.001)
 	arg_parser.add_argument('-e', '--event', type = str, choices = ['feeding', 'contact', 'all'], default = 'all')
 	arg_parser.add_argument('-t', '--target', type = str, choices = ['size', 'age', 'all'], default = 'all')
-	arg_parser.add_argument('-c', '--split-config-path', type = str)
+	arg_parser.add_argument('-c', '--split-config-path', type = str, required = True)
 	arg_parser.add_argument('--age-mode', type = str, default = 'single')
 	arg_parser.add_argument('--samples-per-class', type = str, default = 'min')
 	arg_parser.add_argument('--age-range', type = str, default = 'none')
 	arg_parser.add_argument('--out', type = str, default = '_out')
 	arg_parser.add_argument('--n-simple-models', type = int, default = 20)
 	arg_parser.add_argument('--ensemble-voting', type = str, choices = ['soft', 'hard'], default = 'soft')
+	arg_parser.add_argument('--ensemble-svm', action = 'store_true')
+	arg_parser.add_argument('--ensemble-mlp', action = 'store_true')
+	arg_parser.add_argument('--ensemble-rfc', action = 'store_true')
+	arg_parser.add_argument('--ensemble-bayes', action = 'store_true')
 	args = arg_parser.parse_args()
 
 	with open(args.split_config_path, mode = 'rt') as split_file:
@@ -81,7 +85,11 @@ def main():
 			data_path = args.data_path,
 			data_config = data_split_config,
 			n_models = args.n_simple_models,
-			voting = args.ensemble_voting
+			voting = args.ensemble_voting,
+			svm = args.ensemble_svm,
+			rfc = args.ensemble_rfc,
+			mlp = args.ensemble_mlp,
+			bayes = args.ensemble_bayes
 		)
 	else:
 		if args.audio_path is None:

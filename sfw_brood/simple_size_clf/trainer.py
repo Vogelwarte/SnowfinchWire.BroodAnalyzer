@@ -10,11 +10,23 @@ from sfw_brood.simple_size_clf.preprocessing import prepare_feeding_data, genera
 
 
 class SimpleClfTrainer(ModelTrainer):
-	def __init__(self, data_path: str, data_config: dict, n_models: int, voting: str):
+	def __init__(
+			self, data_path: str, data_config: dict, n_models: int, voting: str,
+			svm = True, rfc = False, mlp = False, bayes = False
+	):
 		self.data_path = Path(data_path)
 		self.data_config = data_config['size']
 		self.n_models = n_models
 		self.voting = voting
+
+		self.svm = svm
+		self.rfc = rfc
+		self.mlp = mlp
+		self.bayes = bayes
+		if not any((svm, rfc, mlp, bayes)):
+			print('At least one type of model has to be specified to compose an ensemble')
+			exit(13)
+
 		self.x_features = [
 			'duration', 'feeding_count', 'age_min', 'age_max',
 			'min_sin', 'min_cos', 'agg_duration', 'agg_feeding_count'
@@ -47,7 +59,10 @@ class SimpleClfTrainer(ModelTrainer):
 		classifiers = []
 
 		for label_col in self.label_columns:
-			clf = EnsemleClassifier(n_models = self.n_models, svm = True, bayes = True, name = label_col)
+			clf = EnsemleClassifier(
+				n_models = self.n_models, name = label_col,
+				svm = self.svm, bayes = self.bayes, mlp = self.mlp, rfc = self.rfc
+			)
 			print(f'Training simple size CLF for label group {label_col}')
 			clf.fit(self.train_data, self.x_features, y_col = label_col)
 			classifiers.append(clf)

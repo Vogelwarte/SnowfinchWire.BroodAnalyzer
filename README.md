@@ -4,6 +4,20 @@ Estimation of size and age of Eurasian Snowfinch broods based on audio recording
 
 ## Installation
 
+Clone the repository and then initialize `common` submodule with the command
+```shell
+git submodule update --init
+```
+
+### Linux
+
+Install the dependencies with the command
+```shell
+pip install -r requirements.txt
+```
+
+### Windows
+
 Run the script _install.ps1_ with PowerShell in order to install all the dependencies.
 
 ## Classification
@@ -134,10 +148,16 @@ If the user chooses to train the simple size classifier, they can specify the fo
   default,
 * `--ensemble-voting <type>` - a type of voting used by an ensemble model to determine final predictions; can be set 
   to _soft_ (default) or _hard_.
+* `--ensemble-svm` - use SVM models to compose ensemble
+* `--ensemble-rfc` - use Random Forest models to compose ensemble
+* `--ensemble-mlp` - use MLP models to compose ensemble
+* `--ensemble-bayes` - use Bayesian classifiers to compose ensemble
+>Note: At least one of flags `--ensemble-svm`, `--ensemble-rfc`, `--ensemble-mlp`, `--ensemble-bayes` has to be 
+> supplied.
 
 The dataset definition directory has to contain the following files:
 * _feeding-stats.csv_ - a file with feeding statistics produced by _SnowfinchWire.BeggingCallsAnalyzer_,
-* _snowfinch-broods.csv_ - a brood information file descrived in the previoud section
+* _snowfinch-broods.csv_ - a brood information file described in the previous section
 
 ### OpenSoundscape
 
