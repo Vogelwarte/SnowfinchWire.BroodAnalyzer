@@ -11,8 +11,10 @@ git submodule update --init
 
 ### Linux
 
-Install the dependencies with the command
+Create Python 3.9 venv and install the dependencies with the commands
 ```shell
+python3.9 -m venv venv
+. ./venv/bin/activate
 pip install -r requirements.txt
 ```
 
