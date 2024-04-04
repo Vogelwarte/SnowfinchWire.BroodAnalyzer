@@ -1,0 +1,14 @@
+{
+  "id": "data-size-groups-age-13+-f2",
+  "size": {
+    "selector": "brood_id",
+    "validation": ["1_2_1_22", "10_1_1_22", "Furka10_22a"],
+    "groups": [[0, 3], [4, 6]]
+  },
+  "age": {
+    "selector": "brood_id",
+    "validation": ["Joch4_22a", "Furka33_22a"],
+    "test": ["Furka12_22a", "12_1_1_22", "8_5_1_22", "10_1_1_22", "1_6_1_22", "1_8_1_22"],
+    "groups": [[0, 5.5], [6, 8.5], [9, 11.5], [12, 14.5], [15, 30]]
+  }
+}

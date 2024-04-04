@@ -1,0 +1,14 @@
+{
+  "id": "data-f1",
+  "size": {
+    "selector": "brood_id",
+    "validation": ["Furka33_22a", "Furka33_22a_val", "Furka31_22a", "Furka34_22a"],
+    "classes": [2, 3, 4, 5]
+  },
+  "age": {
+    "selector": "brood_id",
+    "validation": ["Joch4_22a", "Furka33_22a"],
+    "test": ["Furka12_22a", "12_1_1_22", "8_5_1_22", "10_1_1_22", "1_6_1_22", "1_8_1_22"],
+    "groups": [[0, 5.5], [6, 8.5], [9, 11.5], [12, 14.5], [15, 30]]
+  }
+}

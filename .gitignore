@@ -1,6 +1,12 @@
 .idea
 
-venv
+*venv*
 __pycache__
 
-_data
+_data*
+_training
+_testing
+_out
+.work
+**/nemo_experiments
+**/*.log
