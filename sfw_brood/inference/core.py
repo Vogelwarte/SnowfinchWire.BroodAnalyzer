@@ -244,6 +244,8 @@ class Inference:
 				columns = { 'start': 'start_time', 'end': 'end_time' }
 			)
 			rec_df['file'] = rec_path
+			rec_df['start_time'] = rec_df['start_time'].astype(float)
+			rec_df['end_time'] = rec_df['end_time'].astype(float)
 			rec_df = rec_df.set_index(['file', 'start_time', 'end_time'])
 			samples_df = pd.concat([samples_df, rec_df])
 
