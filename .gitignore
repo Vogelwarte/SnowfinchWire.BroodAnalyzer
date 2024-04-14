@@ -10,3 +10,9 @@ _out
 .work
 **/nemo_experiments
 **/*.log
+
+config/debug.yml
+
+uat/models/*.zip
+uat/out
+.sfw-labels

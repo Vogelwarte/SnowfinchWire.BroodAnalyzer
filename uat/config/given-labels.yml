@@ -1,0 +1,9 @@
+data:
+  recordings: uat/data
+model:
+  path: uat/models
+  n_workers: 10
+output_dir: uat/out
+aggregation:
+  period_hours: 48
+  overlap_hours: 24
