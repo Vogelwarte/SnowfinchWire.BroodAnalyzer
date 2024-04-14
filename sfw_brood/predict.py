@@ -26,6 +26,7 @@ def detect_feeding(path: str, model_type: str, model_path: str, rec_path: str, o
 		args.append(f'--{key}={val}')
 
 	print('Detecting feeding calls...')
+	print(' '.join(args))
 	process = subprocess.run(args, cwd = path)
 	print('Feeding detection done')
 
