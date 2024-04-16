@@ -77,7 +77,7 @@ class ModelLoader(ABC):
 		model = self._deserialize_model_('model', meta_data)
 		Path('model').unlink()
 
-		# print(meta_data)
+		print(meta_data)
 		return model
 
 	@abstractmethod

@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 from datetime import datetime
@@ -40,26 +41,69 @@ class UAT:
 				model_result_dir.is_dir(),
 				f'Result directory for model {model} is present'
 			)
+
+			if 'stat' in model:
+				print('Assuming that model is of type SIMPLE_SIZE_CLF')
+				self.__verify_stat_result_dir_structure__(model, model_result_dir)
+			else:
+				print('Assuming that model is of type CNN (OSS)')
+				self.__verify_oss_result_dir_structure__(model, model_result_dir)
+
+	def __verify_stat_result_dir_structure__(self, model: str, model_result_dir: Path):
+		sub_dir_prefix = 'SimpleSize__'
+
+		for sub_model_dir in model_result_dir.glob(f'{sub_dir_prefix}*'):
+			sub_model = f'{model}:{sub_model_dir.stem}'
+
+			sub_model_labels = sub_model_dir.stem[len(sub_dir_prefix):].split('__')
+			for label in sub_model_labels:
+				self.__assert_true__(
+					bool(re.match('^([1-6]|([1-5]-[2-6]))$', label)),
+					f'Result directory name for model {sub_model} consists of valid class labels: {label}'
+				)
+
 			self.__assert_true__(
-				model_result_dir.joinpath('sample-preds.csv').is_file(),
-				f'Sample predictions file for model {model} is present'
+				sub_model_dir.is_dir(),
+				f'Result directory for model {sub_model} is present'
 			)
 			self.__assert_true__(
-				model_result_dir.joinpath('rec-preds.csv').is_file(),
-				f'Recording predictions file for model {model} is present'
+				sub_model_dir.joinpath('brood-period-preds.csv').is_file(),
+				f'Brood-period predictions file for model {sub_model} is present'
 			)
 			self.__assert_true__(
-				model_result_dir.joinpath('brood-period-preds.csv').is_file(),
-				f'Brood-period predictions file for model {model} is present'
+				sub_model_dir.joinpath('sample-preds.csv').is_file(),
+				f'Sample predictions file for model {sub_model} is present'
 			)
 			self.__assert_true__(
-				model_result_dir.joinpath('1_6_1_22.png').is_file(),
-				f'Brood 1_6_1_22 age graph for model {model} is present'
+				sub_model_dir.joinpath('1_6_1_22.png').is_file(),
+				f'Brood 1_6_1_22 size graph for model {sub_model} is present'
 			)
 			self.__assert_true__(
-				model_result_dir.joinpath('8_1_1_23.png').is_file(),
-				f'Brood 8_1_1_23 age graph for model {model} is present'
+				sub_model_dir.joinpath('8_1_1_23.png').is_file(),
+				f'Brood 8_1_1_23 size graph for model {sub_model} is present'
 			)
+
+	def __verify_oss_result_dir_structure__(self, model: str, model_result_dir: Path):
+		self.__assert_true__(
+			model_result_dir.joinpath('sample-preds.csv').is_file(),
+			f'Sample predictions file for model {model} is present'
+		)
+		self.__assert_true__(
+			model_result_dir.joinpath('rec-preds.csv').is_file(),
+			f'Recording predictions file for model {model} is present'
+		)
+		self.__assert_true__(
+			model_result_dir.joinpath('brood-period-preds.csv').is_file(),
+			f'Brood-period predictions file for model {model} is present'
+		)
+		self.__assert_true__(
+			model_result_dir.joinpath('1_6_1_22.png').is_file(),
+			f'Brood 1_6_1_22 age graph for model {model} is present'
+		)
+		self.__assert_true__(
+			model_result_dir.joinpath('8_1_1_23.png').is_file(),
+			f'Brood 8_1_1_23 age graph for model {model} is present'
+		)
 
 	def __find_result_directory__(self, out_path: Path, start_time: datetime) -> Path:
 		for subdir in out_path.glob('result__*'):

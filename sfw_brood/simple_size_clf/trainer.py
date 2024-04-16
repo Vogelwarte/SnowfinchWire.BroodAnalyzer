@@ -81,7 +81,7 @@ class SimpleClfTrainer(ModelTrainer):
 			}
 		)
 
-		trained_model.serialize(Path(out_dir).joinpath('model').as_posix())
+		trained_model.serialize(Path(out_dir).joinpath('size-stat-model').as_posix())
 
 		model_validator = SimpleClfValidator(self.test_data, self.label_columns)
 		model_validator.validate(trained_model, output = out_dir)

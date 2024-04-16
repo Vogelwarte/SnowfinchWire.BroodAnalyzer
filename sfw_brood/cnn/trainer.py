@@ -111,7 +111,7 @@ class CNNTrainer(ModelTrainer):
 		trained_model = self.__train_and_validate__(
 			cnn, train_data, test_data, validation_data, out_dir, target, multi_target
 		)
-		trained_model.serialize(f'{out_dir}/model')
+		trained_model.serialize(f'{out_dir}/{target}-oss-model')
 
 	def __setup_cnn__(self, classes, multi_target: bool):
 		if self.cnn_arch == 'inception_v3':
