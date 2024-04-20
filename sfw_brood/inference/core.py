@@ -216,8 +216,8 @@ class Inference:
 		for audio_path, label_path in zip(audio_paths, label_paths):
 			if audio_path.is_dir():
 				print(f'Discovering recordings from {audio_path.as_posix()} directory')
-				formats = ['wav', 'flac', 'WAV'] if platform.system().lower() == 'windows' else ['wav', 'flac']
-				for fmt in formats:
+				# formats = ['wav', 'flac', 'WAV'] if platform.system().lower() == 'windows' else ['wav', 'flac']
+				for fmt in ['wav', 'flac', 'WAV']:
 					for file in audio_path.rglob(f'*.{fmt}'):
 						rec_paths.append(file)
 						label_file = self.__label_path_for_rec__(file.relative_to(audio_path))
