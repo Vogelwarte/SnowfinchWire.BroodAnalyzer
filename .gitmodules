@@ -1,3 +1,6 @@
 [submodule "sfw_brood/common"]
 	path = sfw_brood/common
 	url = https://github.com/Vogelwarte/SnowfinchWire.Common.git
+[submodule "begging-analyzer"]
+	path = begging-analyzer
+	url = https://github.com/Vogelwarte/SnowfinchWire.BeggingCallsAnalyzer.git

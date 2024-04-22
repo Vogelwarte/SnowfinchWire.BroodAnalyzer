@@ -4,18 +4,21 @@ Estimation of size and age of Eurasian Snowfinch broods based on audio recording
 
 ## Installation
 
-Clone the repository and then initialize `common` submodule with the command
+Clone the repository and then initialize the submodules with the command
+
 ```shell
-git submodule update --init
+git submodule update --init --recursive
 ```
 
 ### Linux
 
 Create Python 3.9 venv and install the dependencies with the commands
+
 ```shell
 python3.9 -m venv venv
 . ./venv/bin/activate
-pip install -r requirements.txt
+pip install -r begging-analyzer/requirements.txt
+pip install -r requirements.txt --force-reinstall
 ```
 
 ### Windows
@@ -85,12 +88,13 @@ All the other attributes are optional and each of them corresponds to one of the
 ### Simple size classfier
 
 The input directory for a simple brood size classifier should contain the following files:
+
 * _feeding-stats.csv_ - a file with feeding statistics produced by _SnowfinchWire.BeggingCallsAnalyzer_,
-* _brood-age.csv_ - a file with age information; this file is produced by running age classification with 
+* _brood-age.csv_ - a file with age information; this file is produced by running age classification with
   a CNN model - it is called _brood-period-preds.csv_; the following columns are required:
-  * _brood_id_ - brood identifier, string
-  * _period_start_ - date and time in ISO format
-  * _class_ - age of the youngest nestling, floating point number
+    * _brood_id_ - brood identifier, string
+    * _period_start_ - date and time in ISO format
+    * _class_ - age of the youngest nestling, floating point number
 
 ### Embedded feeding detection
 
@@ -108,6 +112,39 @@ Alternatively, feeding detection can be configured via the configuration file de
 the `path` attribute is equivalent to `--feeding-detector-path` option. All attributes defined under `args` key are
 transparently passed to the _SnowfinchWire.BeggingCallsAnalyzer_ launcher.
 
+### Combining different models
+
+It is possible to perform classification with OpenSoundScape model for age detection (_age-oss_ model) nad simple brood
+size classifier (_size-stat_ model) in a single run. In order to do this, both models should be placed under one
+directory passed to the program as _model_path_. For the program to work correctly, it is required that the
+_size-stat_ model file name contains "size-stat" phrase and the _age-oss_ model file name contains "age-oss" phrase.
+The program will first run feeding detection (if specified), then brood age classification and finally brood size
+classification, since this process uses output of both the previous as its input.
+
+### Available models
+
+There are a few trained models available on SharePoint under _Documents/BroodAnalyzerModels_ directory:
+* 20240402-Age
+    * age-oss-model-inception.zip
+* 20240422-Size
+    * size-stat-model-n20-vs-svm-bayes.zip
+    * size-stat-model-n20-vs-svm-bayes-rfc.zip
+
+The models for size classification have slightly different accuracy scores on test data set for different class 
+selection:
+* size-stat-model-n20-vs-svm-bayes.zip
+    * classes 2, 3, 4, 5: 0.569,
+    * classes 2-3, 4-5: 0.875,
+    * classes 2-3, 4, 5: 0.815,
+    * classes 2, 3-4, 5: 0.666,
+    * classes 2, 3, 4-5: 0.636
+* size-stat-model-n20-vs-svm-bayes-rfc.zip
+    * classes 2, 3, 4, 5: 0.522,
+    * classes 2-3, 4-5: 0.881,
+    * classes 2-3, 4, 5: 0.804,
+    * classes 2, 3-4, 5: 0.668,
+    * classes 2, 3, 4-5: 0.609
+
 ## Model training
 
 In order to train a model, use `train_model.py` script located under the project root directory. The script requires
@@ -118,15 +155,15 @@ several command line arguments and options, which partly depend on the model typ
   located under `config` directory; this is a required option,
 * `-a <architecture>` - a model architecture to use, can be one of the following:
     * _simple-ensemble_ to train simple brood size classifier,
-    * One of CNN architectures supported by OpenSoundscape: 
-      * _resnet18_, 
-      * _resnet50_, 
-      * _resnet101_, 
-      * _resnet152_,
-      * _vgg11_bn_, 
-      * _densenet121_, 
-      * _inception_v3_, 
-      * _matchboxnet_.
+    * One of CNN architectures supported by OpenSoundscape:
+        * _resnet18_,
+        * _resnet50_,
+        * _resnet101_,
+        * _resnet152_,
+        * _vgg11_bn_,
+        * _densenet121_,
+        * _inception_v3_,
+        * _matchboxnet_.
 
   Set to _resnet18_ by default,
 * `--out <output_directory>` - a path to a directory where prediction results are to be stored, `_out` by default.
@@ -134,53 +171,60 @@ several command line arguments and options, which partly depend on the model typ
 ### Brood information file
 
 In order to train any model, brood information file is necessary. It is a .csv file with the following columns:
+
 * _brood_id_ - brood identifier, string
 * _datetime_ - date and time in ISO format
 * _age_min_ - age of the youngest nestling, floating point number
 * _age_max_ - age of the eldest nestling, floating point number
 * _size_ - true brood size, integer
 
-A single line of the file should describe one of the broods used in the training process at a specific time. For 
+A single line of the file should describe one of the broods used in the training process at a specific time. For
 each brood there should be at least one line per day of recordings.
 
 ### Simple size classifier
 
 If the user chooses to train the simple size classifier, they can specify the following additional options:
-* `--n-simple-models <count>` - a count of simple models of each type used in a target ensemble classifier, 20 by 
+
+* `--n-simple-models <count>` - a count of simple models of each type used in a target ensemble classifier, 20 by
   default,
-* `--ensemble-voting <type>` - a type of voting used by an ensemble model to determine final predictions; can be set 
+* `--ensemble-voting <type>` - a type of voting used by an ensemble model to determine final predictions; can be set
   to _soft_ (default) or _hard_.
 * `--ensemble-svm` - use SVM models to compose ensemble
 * `--ensemble-rfc` - use Random Forest models to compose ensemble
 * `--ensemble-mlp` - use MLP models to compose ensemble
 * `--ensemble-bayes` - use Bayesian classifiers to compose ensemble
->Note: At least one of flags `--ensemble-svm`, `--ensemble-rfc`, `--ensemble-mlp`, `--ensemble-bayes` has to be 
+
+> Note: At least one of flags `--ensemble-svm`, `--ensemble-rfc`, `--ensemble-mlp`, `--ensemble-bayes` has to be
 > supplied.
 
 The dataset definition directory has to contain the following files:
+
 * _feeding-stats.csv_ - a file with feeding statistics produced by _SnowfinchWire.BeggingCallsAnalyzer_,
 * _snowfinch-broods.csv_ - a brood information file described in the previous section
 
 ### OpenSoundscape
 
-Training a CNN model from OpenSoundscape framework requires an additional command line option: `--audio-path <path>`. 
+Training a CNN model from OpenSoundscape framework requires an additional command line option: `--audio-path <path>`.
 It has to specify a path to a directory containg audio recordings. Moreover, there are a few more options:
+
 * `-d <duration>` - an audio sample duration in seconds for the model to work on, 2 by default,
 * `-n <n_epochs>` - a number of training epochs, 10 by default,
 * `-w <n_workers>` - a number of parallel processes used for training,
 * `-b <batch_size>` - a batch size, 100 by default,
 * `-l <learning_rate>` - a learning rate, 0.001 by default,
 * `-t <target>` - classification target: _size_, _age_ or _all_ (default); if _all_ is chosen, two models are generated,
-* `--age-mode <mode>` - classification mode for brood age: _single_ (default) or _multi_; use this option to train 
+* `--age-mode <mode>` - classification mode for brood age: _single_ (default) or _multi_; use this option to train
   multi target model,
-* `--samples-per-class <n>` - specifies how many audio samples should be used per each class; by default the 
+* `--samples-per-class <n>` - specifies how many audio samples should be used per each class; by default the
   quantity of samples representing the least numerous class is used.
 
 The dataset definition directory has to contain the following files:
+
 * _brood-size.csv_
 * _brood-age.csv_
 
 These files can be created using the following commands:
+
 ```shell
 python -m sfw_brood.describe_recordings \
   --brood-data <path/to/brood-information-file.csv> \
@@ -196,8 +240,8 @@ python -m sfw_brood.export_data \
   <path/to/recordings> <path/to/output>
 ```
 
-The first command will produce the file _snowfinch-recordings.csv_ in a location specified by the user and the 
-second will use it to prepare data for OpenSoundscapre training process. As a result, the recordings will be sliced 
-to samples of the given length with the requested overlap. The samples will be stored under the path specified by 
-the `--audio-out-path` option. The _brood-size.csv_ and _brood-age.csv_ files will be created under the path 
+The first command will produce the file _snowfinch-recordings.csv_ in a location specified by the user and the
+second will use it to prepare data for OpenSoundscapre training process. As a result, the recordings will be sliced
+to samples of the given length with the requested overlap. The samples will be stored under the path specified by
+the `--audio-out-path` option. The _brood-size.csv_ and _brood-age.csv_ files will be created under the path
 specified by the last argument.

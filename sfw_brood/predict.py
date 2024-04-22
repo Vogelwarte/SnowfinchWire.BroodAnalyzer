@@ -17,9 +17,9 @@ def detect_feeding(path: str, model_type: str, model_path: str, rec_path: str, o
 	rec_path = Path(rec_path).absolute()
 
 	args = [
-		sys.executable, '-Wignore', '-m', 'beggingcallsanalyzer', f'predict-{model_type}',
+		sys.executable, '-Wignore', 'classify.py', model_type,
 		f'--model-path={model_path.as_posix()}', f'--input-directory={rec_path.as_posix()}',
-		f'--output-directory={out_path.as_posix()}'
+		f'--output-directory={out_path.as_posix()}', '--create-plots'
 	]
 
 	for key, val in extra_args.items():
@@ -86,21 +86,27 @@ def main():
 	arg_parser.add_argument('--feeding-detector-model', type = str, default = None)
 	args = arg_parser.parse_args()
 
-	feeding_detector_args = {}
+	feeding_detector_args = { }
 	if args.config_path is not None:
 		config = load_config(args.config_path)
 		print(f'Loaded config from file: {config}')
 		args.__dict__.update(config)
-		feeding_detector_args.update(config.get('feeding_detector_extra_args', {}))
+		feeding_detector_args.update(config.get('feeding_detector_extra_args', { }))
 
 	if args.input_path is None or args.model_path is None:
 		print('Missing required arguments: input_path or model')
 		exit(1)
 
 	label_paths = None if args.label_path is None else [Path(args.label_path)]
+	input_path = Path(args.input_path)
+	feeding_stats_path = input_path.joinpath('feeding-stats.csv')
+	age_pred_path = input_path.joinpath('brood-age.csv')
+
 	if args.feeding_detector_model is not None:
 		labels_path = '.sfw-labels' if args.label_path is None else args.label_path
-		label_paths = [Path(labels_path)]
+		feeding_stats_path = Path(labels_path).joinpath('summary.csv')
+		feeding_stats_path.unlink(missing_ok = True)  # otherwise BCA does not write CSV header ...
+
 		detect_feeding(
 			path = args.feeding_detector_path,
 			model_type = args.feeding_detector_type,
@@ -109,6 +115,7 @@ def main():
 			out_path = labels_path,
 			extra_args = feeding_detector_args
 		)
+		label_paths = [Path(labels_path)]
 
 	time_str = datetime.now().isoformat()[:19].replace(':', '-')
 	out_path = Path(args.output_dir).joinpath(f'result__{time_str}')
@@ -131,22 +138,24 @@ def main():
 	else:
 		model_files = [model_path]
 
-	input_path = Path(args.input_path)
+	# make sure that size-stat-model is used after all the others,
+	# so that age pred results can be produced for it to use
+	model_files.sort(key = lambda path: 1 if 'size-stat' in path.stem else 0)
 
 	try:
 		for model_file in model_files:
 			print(f'Loading model {model_file.as_posix()}')
 			model = model_loader.load_model(model_file.as_posix())
+			model_out_path = out_path.joinpath(model_file.stem)
 
 			if model.model_type == ModelType.SIMPLE_SIZE_CLF:
 				inference = SimpleSizeInference(model)
 				preds = inference.predict(
-					feeding_stats_path = input_path.joinpath('feeding-stats.csv'),
-					age_pred_path = input_path.joinpath('brood-age.csv'),
+					feeding_stats_path, age_pred_path,
 					period_hours = args.period_hours, overlap_hours = args.overlap_hours
 				)
 				for pred in preds:
-					pred.save(out_path.joinpath(model_file.stem).joinpath(pred.model_name))
+					pred.save(model_out_path.joinpath(pred.model_name))
 			else:
 				inference = Inference(model)
 				pred_result = inference.predict(
@@ -154,7 +163,9 @@ def main():
 					agg_period_hours = args.period_hours, overlap_hours = args.overlap_hours,
 					multi_target_threshold = args.mt_threshold, label_paths = label_paths
 				)
-				pred_result.save(out_path.joinpath(model_file.stem))
+				pred_result.save(model_out_path)
+				if model.model_info['target'] == 'age':
+					age_pred_path = model_out_path.joinpath('brood-period-preds.csv')
 
 		print(f'Prediction results saved to directory {out_path}')
 

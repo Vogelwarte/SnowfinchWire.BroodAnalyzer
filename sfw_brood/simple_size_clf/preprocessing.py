@@ -25,6 +25,7 @@ def find_brood_metrics(brood_id: str, day: date, brood_df: pd.DataFrame) -> Tupl
 # brood_data columns: brood_id, datetime, age_min, age_max, [size]
 def prepare_feeding_data(feeding_stats_path: Path, brood_data: pd.DataFrame) -> pd.DataFrame:
 	feeding_stats = pd.read_csv(feeding_stats_path)
+	feeding_stats.rename(columns = { 'mean_feeding_duration': 'duration' }, inplace = True)
 	feeding_stats['datetime'] = pd.to_datetime(feeding_stats['datetime'])
 	feeding_stats['day'] = feeding_stats['datetime'].apply(lambda dt: dt.date())
 
