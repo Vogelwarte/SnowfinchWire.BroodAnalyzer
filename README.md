@@ -114,12 +114,36 @@ transparently passed to the _SnowfinchWire.BeggingCallsAnalyzer_ launcher.
 
 ### Combining different models
 
-It is possible to perform classification with OpenSoundScape model for age detection (_age-oss_ model) nad simple brood 
-size classifier (_size-stat_ model) in a single run. In order to do this, both models should be placed under one 
-directory passed to the program as _model_path_. For the program to work correctly, it is required that the 
-_size-stat_ model file name contains "size-stat" phrase and the _age-oss_ model file name contains "age-oss" phrase. 
-The program will first run feeding detection (if specified), then brood age classification and finally brood size 
+It is possible to perform classification with OpenSoundScape model for age detection (_age-oss_ model) nad simple brood
+size classifier (_size-stat_ model) in a single run. In order to do this, both models should be placed under one
+directory passed to the program as _model_path_. For the program to work correctly, it is required that the
+_size-stat_ model file name contains "size-stat" phrase and the _age-oss_ model file name contains "age-oss" phrase.
+The program will first run feeding detection (if specified), then brood age classification and finally brood size
 classification, since this process uses output of both the previous as its input.
+
+### Available models
+
+There are a few trained models available on SharePoint under _Documents/BroodAnalyzerModels_ directory:
+* 20240402-Age
+    * age-oss-model-inception.zip
+* 20240422-Size
+    * size-stat-model-n20-vs-svm-bayes.zip
+    * size-stat-model-n20-vs-svm-bayes-rfc.zip
+
+The models for size classification have slightly different accuracy scores on test data set for different class 
+selection:
+* size-stat-model-n20-vs-svm-bayes.zip
+    * classes 2, 3, 4, 5: 0.569,
+    * classes 2-3, 4-5: 0.875,
+    * classes 2-3, 4, 5: 0.815,
+    * classes 2, 3-4, 5: 0.666,
+    * classes 2, 3, 4-5: 0.636
+* size-stat-model-n20-vs-svm-bayes-rfc.zip
+    * classes 2, 3, 4, 5: 0.522,
+    * classes 2-3, 4-5: 0.881,
+    * classes 2-3, 4, 5: 0.804,
+    * classes 2, 3-4, 5: 0.668,
+    * classes 2, 3, 4-5: 0.609
 
 ## Model training
 
