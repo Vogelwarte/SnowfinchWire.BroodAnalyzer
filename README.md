@@ -112,6 +112,15 @@ Alternatively, feeding detection can be configured via the configuration file de
 the `path` attribute is equivalent to `--feeding-detector-path` option. All attributes defined under `args` key are
 transparently passed to the _SnowfinchWire.BeggingCallsAnalyzer_ launcher.
 
+### Combining different models
+
+It is possible to perform classification with OpenSoundScape model for age detection (_age-oss_ model) nad simple brood 
+size classifier (_size-stat_ model) in a single run. In order to do this, both models should be placed under one 
+directory passed to the program as _model_path_. For the program to work correctly, it is required that the 
+_size-stat_ model file name contains "size-stat" phrase and the _age-oss_ model file name contains "age-oss" phrase. 
+The program will first run feeding detection (if specified), then brood age classification and finally brood size 
+classification, since this process uses output of both the previous as its input.
+
 ## Model training
 
 In order to train a model, use `train_model.py` script located under the project root directory. The script requires
