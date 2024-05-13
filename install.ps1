@@ -47,5 +47,6 @@ Copy-Item -Recurse -Path .download/SnowfinchWire.Common-1.0-beggingcallsanalyzer
 Remove-Item -Recurse .download
 
 & $python_path -m pip install --upgrade pip
-& $python_path -m pip install -r begging-analyzer/requirements.txt
-& $python_path -m pip install -r requirements.txt --force-reinstall
+& $python_path -m pip install -r begging-analyzer/requirements.txt --user
+# & $python_path -m pip install -r requirements.txt --force-reinstall
+& $python_path -m pip install -r requirements.txt --user
