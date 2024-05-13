@@ -202,8 +202,11 @@ class Inference:
 		)
 
 	def __label_path_for_rec__(self, rec_path: Path) -> Path:
-		return rec_path.parent.joinpath(f'{rec_path.stem}.txt')
-		# return rec_path.parent.joinpath(f'predicted_{rec_path.stem}.txt')
+		label_path = rec_path.parent.joinpath(f'{rec_path.stem}.txt')
+		if label_path.exists():
+			return label_path
+		else:
+			return rec_path.parent.joinpath(f'predicted_{rec_path.stem}.txt')
 
 	def __prepare_data__(self, audio_paths: List[Path], label_paths: Optional[List[Path]]) -> pd.DataFrame:
 		if label_paths is None:

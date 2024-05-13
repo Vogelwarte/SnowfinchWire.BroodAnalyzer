@@ -81,7 +81,9 @@ def __find_reference_info__(brood, dt, true_df):
 	return true_df.iloc[time_delta.argmin()][['brood_size', 'period_start']]
 
 
-def aggregate_test_data(test_df: pd.DataFrame, pred: SnowfinchBroodPrediction) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def aggregate_test_data(
+		test_df: pd.DataFrame, pred: SnowfinchBroodPrediction
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 	size_test_df = pred.sample_results[['brood_id', 'datetime']]
 	size_test_df[['size', 'period_start']] = size_test_df.apply(
 		lambda row: __find_reference_info__(row['brood_id'], row['datetime'], test_df),
@@ -94,23 +96,36 @@ def aggregate_test_data(test_df: pd.DataFrame, pred: SnowfinchBroodPrediction) -
 		return map_class_to_group(size, size_groups, group_labels = pred.classes)
 
 	size_test_df['class'] = size_test_df['size'].apply(map_size)
-	size_test_df = classes_to_1hot(size_test_df)
-	for cls in pred.classes:
-		if cls not in size_test_df.columns:
-			size_test_df[cls] = 0
+	size_test_df.reset_index(inplace = True)
 
-	agg_map = { 'datetime': 'count' }
-	for bs in pred.classes:
-		agg_map[bs] = 'sum'
+	# size_test_df = classes_to_1hot(size_test_df)
+	# for cls in pred.classes:
+	# 	if cls not in size_test_df.columns:
+	# 		size_test_df[cls] = 0
+	#
+	# agg_map = { 'datetime': 'count' }
+	# for bs in pred.classes:
+	# 	agg_map[bs] = 'sum'
+	#
+	# agg_cols = ['brood_id', 'period_start'] + list(agg_map.keys())
+	# size_test_agg = size_test_df[agg_cols].groupby(['brood_id', 'period_start']).agg(agg_map)
+	# idx = pred.brood_periods_results.set_index(['brood_id', 'period_start']).index
+	# size_test_agg = size_test_agg.loc[idx].reset_index()
+	# size_test_agg = size_test_agg.rename(columns = { 'datetime': 'sample_count' })
+	# size_test_agg['class'] = size_test_agg[pred.classes].idxmax(axis = 1)
 
-	agg_cols = ['brood_id', 'period_start'] + list(agg_map.keys())
-	size_test_agg = size_test_df[agg_cols].groupby(['brood_id', 'period_start']).agg(agg_map)
-	idx = pred.brood_periods_results.set_index(['brood_id', 'period_start']).index
-	size_test_agg = size_test_agg.loc[idx].reset_index()
-	size_test_agg = size_test_agg.rename(columns = { 'datetime': 'sample_count' })
-	size_test_agg['class'] = size_test_agg[pred.classes].idxmax(axis = 1)
+	agg_idx_cols = ['brood_id', 'period_start']
+	size_test_agg = test_df[agg_idx_cols + ['brood_size']].groupby(agg_idx_cols).mean()
+	size_test_agg['brood_size'] = np.floor(size_test_agg['brood_size'])
+	size_test_agg.rename(columns = {'brood_size': 'size'}, inplace = True)
 
-	return size_test_df, size_test_agg
+	brood_period_preds = pred.brood_periods_results.set_index(agg_idx_cols)
+	agg_idx = brood_period_preds.index.intersection(size_test_agg.index)
+	brood_period_preds = brood_period_preds.loc[agg_idx].reset_index()
+	size_test_agg = size_test_agg.loc[agg_idx].reset_index()
+	size_test_agg['class'] = size_test_df['size'].apply(map_size)
+
+	return size_test_df, size_test_agg, pred.sample_results, brood_period_preds
 
 
 def __make_sample_id__(row):
@@ -148,9 +163,9 @@ class SimpleSizeInferenceValidator:
 		for pred in preds:
 			pred_out_dir = out_path.joinpath(pred.model_name)
 
-			samples_test_data, test_data = aggregate_test_data(true_brood_data, pred)
+			samples_test_data, test_data, sample_preds, brood_period_preds = aggregate_test_data(true_brood_data, pred)
 			y_true = test_data['class']
-			y_pred = pred.brood_periods_results['class']
+			y_pred = brood_period_preds['class']
 
 			scores[pred.model_name] = accuracy_score(y_true, y_pred)
 
@@ -169,7 +184,7 @@ class SimpleSizeInferenceValidator:
 			merge_df.columns = [
 				col if col in ['brood_id', 'period_start'] else f'true_{col}' for col in merge_df.columns
 			]
-			preds_to_merge = pred.brood_periods_results.sort_values(by = ['brood_id', 'period_start'])
+			preds_to_merge = brood_period_preds.sort_values(by = ['brood_id', 'period_start'])
 			merge_df = pd.concat(
 				[merge_df, preds_to_merge.drop(columns = ['brood_id', 'period_start'])],
 				axis = 1
@@ -180,12 +195,12 @@ class SimpleSizeInferenceValidator:
 			brood_scores_path.mkdir(parents = True, exist_ok = True)
 
 			check_accuracy_per_brood(
-				pred.brood_periods_results, test_data['class'],
+				brood_period_preds, test_data['class'],
 				out_path = brood_scores_path.joinpath('from-periods.csv')
 			)
 
 			check_accuracy_per_brood(
-				pred_df = pred.sample_results,
+				pred_df = sample_preds,
 				true_values = samples_test_data['class'],
 				out_path = brood_scores_path.joinpath('from-samples.csv')
 			)
