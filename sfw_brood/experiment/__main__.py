@@ -111,7 +111,7 @@ def run():
 
 	error_log = open('/home/gardzielb/sfw-brood-work/experiment-errors.log', mode = 'w')
 
-	for setup in experiment['experiments']:
+	for setup in experiment['oss']:
 		out = out_path.joinpath(time_str())
 		out.mkdir(parents = True, exist_ok = True)
 
