@@ -23,7 +23,7 @@ def parse_test_args(
 		sys.executable, '-m', 'sfw_brood.test',
 		'-d', data_path.as_posix(),
 		'-c', Path('config').joinpath(setup['data_config']).as_posix(),
-		'-m', train_out_dir.joinpath('model.zip').as_posix(),
+		'-m', train_out_dir.joinpath(f'{target}-oss-model.zip').as_posix(),
 		'-o', train_out_dir.joinpath('inference').as_posix(),
 		'-t', target, '-w', '12'
 	]

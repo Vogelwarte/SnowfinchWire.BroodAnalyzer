@@ -79,7 +79,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -88,7 +89,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -97,7 +99,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -106,7 +109,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -115,7 +119,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -124,7 +129,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -133,7 +139,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -142,7 +149,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -151,7 +159,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -160,7 +169,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -169,7 +179,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -178,7 +189,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -187,7 +199,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -196,7 +209,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -205,7 +219,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -214,7 +229,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
@@ -223,7 +239,8 @@
       "sample_duration": 5,
       "samples_per_class": 1000,
       "max_epochs": 1
-    }, {
+    },
+    {
       "target": "size",
       "architecture": "inception_v3",
       "lr": 0.003,
