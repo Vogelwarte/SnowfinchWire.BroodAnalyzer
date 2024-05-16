@@ -1,0 +1,95 @@
+{
+  "experiments": [
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 1000,
+      "max_epochs": 1
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.001,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 1000,
+      "max_epochs": 1
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.01,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 1000,
+      "max_epochs": 1
+    },
+    {
+      "target": "size",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 1000,
+      "max_epochs": 1
+    },
+    {
+      "target": "size",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-age-8-13-fold-1.json",
+      "sample_duration": 5,
+      "samples_per_class": 1000,
+      "max_epochs": 1
+    },
+    {
+      "target": "size",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-age-8-13-size-groups-fold-1.json",
+      "sample_duration": 5,
+      "samples_per_class": 1000,
+      "max_epochs": 1
+    },
+    {
+      "target": "size",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-config-size-groups.json",
+      "sample_duration": 5,
+      "samples_per_class": 1000,
+      "max_epochs": 1
+    }
+  ],
+  "simple_size_clf": {
+    "n_models": [10, 20, 50, 100],
+    "voting": ["soft", "hard"],
+    "sub_models": [
+      ["svm"],
+      ["rfc"],
+      ["mlp"],
+      ["bayes"],
+      ["svm", "rfc"],
+      ["svm", "mlp"],
+      ["svm", "bayes"],
+      ["rfc", "mlp"],
+      ["rfc", "bayes"],
+      ["mlp", "bayes"],
+      ["svm", "rfc", "mlp"],
+      ["svm", "rfc", "bayes"],
+      ["svm", "mlp", "bayes"],
+      ["rfc", "mlp", "bayes"],
+      ["svm", "rfc", "mlp", "bayes"]
+    ]
+  }
+}

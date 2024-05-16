@@ -11,8 +11,8 @@ _out
 **/nemo_experiments
 **/*.log
 
-config/debug.yml
-
 uat/models/*.zip
 uat/out
 .sfw-labels
+
+config/debug.yml
