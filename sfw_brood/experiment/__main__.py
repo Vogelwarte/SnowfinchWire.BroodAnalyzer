@@ -37,7 +37,7 @@ def parse_test_args(
 	return args
 
 
-def parse_train_args(work_dir: Path, setup: dict, out: Path) -> list[str]:
+def parse_train_args(work_dir: Path, setup: dict, out: Path, rng_seed: int) -> list[str]:
 	sample_duration = setup['sample_duration']
 	target = setup['target']
 
@@ -48,7 +48,8 @@ def parse_train_args(work_dir: Path, setup: dict, out: Path) -> list[str]:
 		'-t', target, '-e', 'feeding', '-c', f'config/{setup["data_config"]}',
 		'--samples-per-class', str(setup['samples_per_class']),
 		'--out', out.as_posix(),
-		'--audio-path', work_dir.joinpath(f's{sample_duration}/audio').as_posix()
+		'--audio-path', work_dir.joinpath(f's{sample_duration}/audio').as_posix(),
+		'--rng-seed', rng_seed
 	]
 
 	if target == 'age':
@@ -115,16 +116,20 @@ def run():
 		out = out_path.joinpath(time_str())
 		out.mkdir(parents = True, exist_ok = True)
 
-		train_args = parse_train_args(work_dir, setup, out)
-		# print(' '.join(train_args))
-		# train_result_dir = ('BA' if setup['target'] == 'age' else 'BS') + '__dupa'
-		# out.joinpath(train_result_dir).mkdir()
-		if not run_subprocess(train_args, 'train', out, error_log):
-			continue
+		with open(out.joinpath('experiment.json'), mode = 'wt') as setup_file:
+			json.dump(setup, setup_file)
 
-		test_args = parse_test_args(setup, out, rec_dir, brood_data_path)
-		# print(' '.join(test_args))
-		run_subprocess(test_args, 'test', out, error_log)
+		for rng_seed in experiment['rng_seeds']:
+			seed_out = out.joinpath(f'seed-{rng_seed}')
+
+			train_args = parse_train_args(work_dir, setup, seed_out, rng_seed)
+			print(' '.join(train_args))
+			if not run_subprocess(train_args, 'train', seed_out, error_log):
+				continue
+
+			test_args = parse_test_args(setup, seed_out, rec_dir, brood_data_path)
+			print(' '.join(test_args))
+			run_subprocess(test_args, 'test', seed_out, error_log)
 
 	error_log.close()
 

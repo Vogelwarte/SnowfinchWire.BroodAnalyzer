@@ -1,9 +1,12 @@
 import argparse
 import json
+import random
 import warnings
 from datetime import datetime
 from typing import Optional, Tuple
 
+import numpy as np
+import torch
 from pandas.errors import SettingWithCopyWarning
 
 from sfw_brood.cnn.trainer import CNNTrainer
@@ -61,7 +64,13 @@ def main():
 	arg_parser.add_argument('--ensemble-mlp', action = 'store_true')
 	arg_parser.add_argument('--ensemble-rfc', action = 'store_true')
 	arg_parser.add_argument('--ensemble-bayes', action = 'store_true')
+	arg_parser.add_argument('--rng-seed', type = int, default = None)
 	args = arg_parser.parse_args()
+
+	if args.rng_seed is not None:
+		torch.manual_seed(args.rng_seed)
+		random.seed(args.rng_seed)
+		np.random.seed(args.rng_seed)
 
 	with open(args.split_config_path, mode = 'rt') as split_file:
 		data_split_config = json.load(split_file)
