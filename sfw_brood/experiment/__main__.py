@@ -1,6 +1,7 @@
 import json
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -116,10 +117,10 @@ def run():
 		out = out_path.joinpath(time_str())
 		out.mkdir(parents = True, exist_ok = True)
 
-		with open(out.joinpath('experiment.json'), mode = 'wt') as setup_file:
-			json.dump(setup, setup_file)
+		setup['durations'] = {}
 
 		for rng_seed in experiment['rng_seeds']:
+			start_ts = time.time()
 			seed_out = out.joinpath(f'seed-{rng_seed}')
 
 			train_args = parse_train_args(work_dir, setup, seed_out, rng_seed)
@@ -130,6 +131,11 @@ def run():
 			test_args = parse_test_args(setup, seed_out, rec_dir, brood_data_path)
 			print(' '.join(test_args))
 			run_subprocess(test_args, 'test', seed_out, error_log)
+
+			setup['durations'][rng_seed] = time.time() - start_ts
+
+		with open(out.joinpath('experiment.json'), mode = 'wt') as setup_file:
+			json.dump(setup, setup_file)
 
 	error_log.close()
 
