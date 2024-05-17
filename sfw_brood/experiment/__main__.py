@@ -49,7 +49,7 @@ def parse_train_args(work_dir: Path, setup: dict, out: Path, rng_seed: int) -> l
 		'--samples-per-class', str(setup['samples_per_class']),
 		'--out', out.as_posix(),
 		'--audio-path', work_dir.joinpath(f's{sample_duration}/audio').as_posix(),
-		'--rng-seed', rng_seed
+		'--rng-seed', str(rng_seed)
 	]
 
 	if target == 'age':
