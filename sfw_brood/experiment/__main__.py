@@ -114,7 +114,8 @@ def run():
 	error_log = open('/home/gardzielb/sfw-brood-work/experiment-errors.log', mode = 'w')
 
 	for setup in experiment['oss']:
-		out = out_path.joinpath(time_str())
+		# out = out_path.joinpath(time_str())
+		out = out_path.joinpath(str(hash(json.dumps(setup))))
 		out.mkdir(parents = True, exist_ok = True)
 
 		setup['durations'] = {}
