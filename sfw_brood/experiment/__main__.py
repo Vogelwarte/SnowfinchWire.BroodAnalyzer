@@ -43,7 +43,7 @@ def parse_train_args(work_dir: Path, setup: dict, out: Path, rng_seed: int, n_wo
 	target = setup['target']
 
 	args = [
-		sys.executable, 'train_model.py', '-w', int(n_workers),
+		sys.executable, 'train_model.py', '-w', str(n_workers),
 		'-n', str(setup['max_epochs']), '-a', setup['architecture'],
 		'-b', str(setup['bs']), '-l', str(setup['lr']), '-d', str(sample_duration),
 		'-t', target, '-e', 'feeding', '-c', f'config/{setup["data_config"]}',
