@@ -1,5 +1,6 @@
 {
-  "rng_seeds": [69, 2137, 19],
+  "n_workers": 20,
+  "rng_seeds": [69, 2137],
   "oss": [
     {
       "target": "age",

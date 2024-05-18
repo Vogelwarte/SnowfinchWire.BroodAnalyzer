@@ -38,12 +38,12 @@ def parse_test_args(
 	return args
 
 
-def parse_train_args(work_dir: Path, setup: dict, out: Path, rng_seed: int) -> list[str]:
+def parse_train_args(work_dir: Path, setup: dict, out: Path, rng_seed: int, n_workers: int) -> list[str]:
 	sample_duration = setup['sample_duration']
 	target = setup['target']
 
 	args = [
-		sys.executable, 'train_model.py', '-w', '12',
+		sys.executable, 'train_model.py', '-w', int(n_workers),
 		'-n', str(setup['max_epochs']), '-a', setup['architecture'],
 		'-b', str(setup['bs']), '-l', str(setup['lr']), '-d', str(sample_duration),
 		'-t', target, '-e', 'feeding', '-c', f'config/{setup["data_config"]}',
@@ -123,7 +123,7 @@ def run():
 			start_ts = time.time()
 			seed_out = out.joinpath(f'seed-{rng_seed}')
 
-			train_args = parse_train_args(work_dir, setup, seed_out, rng_seed)
+			train_args = parse_train_args(work_dir, setup, seed_out, rng_seed, experiment['n_workers'])
 			print(' '.join(train_args))
 			if not run_subprocess(train_args, 'train', seed_out, error_log):
 				continue
