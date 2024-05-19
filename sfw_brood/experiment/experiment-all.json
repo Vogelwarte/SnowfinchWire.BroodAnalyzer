@@ -1,7 +1,47 @@
 {
-  "n_workers": 24,
+  "n_workers": 20,
   "rng_seeds": [69, 2137],
   "oss": [
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.001,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.01,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 32,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
     {
       "target": "age",
       "architecture": "inception_v3",

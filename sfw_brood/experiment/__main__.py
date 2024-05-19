@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import json
 import subprocess
 import sys
@@ -99,6 +101,10 @@ def run_subprocess(args: list[str], name: str, out_dir: Path, error_log) -> bool
 	return True
 
 
+def hash_experiment(experiment_setup: dict) -> str:
+	return base64.urlsafe_b64encode(hashlib.md5(json.dumps(experiment_setup).encode()).digest()).decode()
+
+
 def run():
 	work_dir = Path('/home/gardzielb/sfw-brood-work')
 	rec_dir = Path('/home/gardzielb/snowfinch_recordings')
@@ -115,7 +121,7 @@ def run():
 
 	for setup in experiment['oss']:
 		# out = out_path.joinpath(time_str())
-		out = out_path.joinpath(str(hash(json.dumps(setup))))
+		out = out_path.joinpath(hash_experiment(setup))
 		out.mkdir(parents = True, exist_ok = True)
 
 		setup['durations'] = {}

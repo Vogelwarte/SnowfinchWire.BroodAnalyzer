@@ -68,6 +68,7 @@ def main():
 	args = arg_parser.parse_args()
 
 	if args.rng_seed is not None:
+		print(f'Setting RNG seed = {args.rng_seed}')
 		torch.manual_seed(args.rng_seed)
 		random.seed(args.rng_seed)
 		np.random.seed(args.rng_seed)
