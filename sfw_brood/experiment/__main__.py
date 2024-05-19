@@ -1,4 +1,3 @@
-import base64
 import hashlib
 import json
 import subprocess
@@ -102,7 +101,7 @@ def run_subprocess(args: list[str], name: str, out_dir: Path, error_log) -> bool
 
 
 def hash_experiment(experiment_setup: dict) -> str:
-	return base64.urlsafe_b64encode(hashlib.md5(json.dumps(experiment_setup).encode()).digest()).decode()
+	return hashlib.md5(json.dumps(experiment_setup).encode()).hexdigest()
 
 
 def run():
