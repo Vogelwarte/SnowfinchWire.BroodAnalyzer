@@ -79,8 +79,9 @@
       "bs": 64,
       "data_config": "data-age-0-8-fold-1.json",
       "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
+      "samples_per_class": 5000,
+      "max_epochs": 30,
+      "age_range": "0-8"
     },
     {
       "target": "size",
@@ -89,8 +90,9 @@
       "bs": 64,
       "data_config": "data-age-0-8-fold-2.json",
       "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
+      "samples_per_class": 5000,
+      "max_epochs": 30,
+      "age_range": "0-8"
     },
     {
       "target": "size",
@@ -99,8 +101,9 @@
       "bs": 64,
       "data_config": "data-age-0-8-fold-3.json",
       "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
+      "samples_per_class": 5000,
+      "max_epochs": 30,
+      "age_range": "0-8"
     },
     {
       "target": "size",
@@ -110,7 +113,8 @@
       "data_config": "data-age-0-8-size-groups-fold-1.json",
       "sample_duration": 5,
       "samples_per_class": 10000,
-      "max_epochs": 30
+      "max_epochs": 30,
+      "age_range": "0-8"
     },
     {
       "target": "size",
@@ -120,7 +124,8 @@
       "data_config": "data-age-0-8-size-groups-fold-2.json",
       "sample_duration": 5,
       "samples_per_class": 10000,
-      "max_epochs": 30
+      "max_epochs": 30,
+      "age_range": "0-8"
     },
     {
       "target": "size",
@@ -130,7 +135,8 @@
       "data_config": "data-age-0-8-size-groups-fold-3.json",
       "sample_duration": 5,
       "samples_per_class": 10000,
-      "max_epochs": 30
+      "max_epochs": 30,
+      "age_range": "0-8"
     },
     {
       "target": "size",
@@ -139,8 +145,9 @@
       "bs": 64,
       "data_config": "data-age-13+-fold-1.json",
       "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
+      "samples_per_class": 5000,
+      "max_epochs": 30,
+      "age_range": "13-30"
     },
     {
       "target": "size",
@@ -149,8 +156,9 @@
       "bs": 64,
       "data_config": "data-age-13+-fold-2.json",
       "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
+      "samples_per_class": 5000,
+      "max_epochs": 30,
+      "age_range": "13-30"
     },
     {
       "target": "size",
@@ -160,7 +168,8 @@
       "data_config": "data-age-13+-size-groups-fold-1.json",
       "sample_duration": 5,
       "samples_per_class": 10000,
-      "max_epochs": 30
+      "max_epochs": 30,
+      "age_range": "13-30"
     },
     {
       "target": "size",
@@ -170,7 +179,8 @@
       "data_config": "data-age-13+-size-groups-fold-2.json",
       "sample_duration": 5,
       "samples_per_class": 10000,
-      "max_epochs": 30
+      "max_epochs": 30,
+      "age_range": "13-30"
     },
     {
       "target": "size",
@@ -179,8 +189,9 @@
       "bs": 64,
       "data_config": "data-age-8-13-fold-1.json",
       "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
+      "samples_per_class": 5000,
+      "max_epochs": 30,
+      "age_range": "8-13"
     },
     {
       "target": "size",
@@ -189,8 +200,9 @@
       "bs": 64,
       "data_config": "data-age-8-13-fold-2.json",
       "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
+      "samples_per_class": 5000,
+      "max_epochs": 30,
+      "age_range": "8-13"
     },
     {
       "target": "size",
@@ -200,7 +212,8 @@
       "data_config": "data-age-8-13-size-groups-fold-1.json",
       "sample_duration": 5,
       "samples_per_class": 10000,
-      "max_epochs": 30
+      "max_epochs": 30,
+      "age_range": "8-13"
     },
     {
       "target": "size",
@@ -210,7 +223,8 @@
       "data_config": "data-age-8-13-size-groups-fold-2.json",
       "sample_duration": 5,
       "samples_per_class": 10000,
-      "max_epochs": 30
+      "max_epochs": 30,
+      "age_range": "8-13"
     },
     {
       "target": "size",
