@@ -56,9 +56,10 @@ def collect_results(root_path: Path) -> pd.DataFrame:
 			record['accuracy'] = result['result']['accuracy']
 			record['classes'] = ','.join(result['classes'])
 
-		with open(result_dir.joinpath('inference').joinpath('test-result.json')) as inference_result_file:
-			inference_result = json.load(inference_result_file)
-			record['inference_accuracy'] = inference_result['result']['accuracy']
+		for inference_dir in result_dir.glob('inference*'):
+			with open(inference_dir.joinpath('test-result.json')) as inference_result_file:
+				inference_result = json.load(inference_result_file)
+				record[f'{inference_dir.name}_accuracy'] = inference_result['result']['accuracy']
 
 		records.append(record)
 
