@@ -37,10 +37,13 @@ def parse_test_args(
 		if agg_overlap is not None:
 			args.extend(['--overlap-hours', str(agg_overlap)])
 			out_dir += f'-o{agg_overlap}'
-	elif target == 'age':
-		args.extend(['-p', '12'])
-		out_dir += '-p12'
-	elif target == 'size':
+	# elif target == 'age':
+	# 	args.extend(['-p', '12'])
+	# 	out_dir += '-p12'
+	# elif target == 'size':
+	# 	args.extend(['-p', '48', '--overlap-hours', '24'])
+	# 	out_dir += '-p48-o24'
+	else:
 		args.extend(['-p', '48', '--overlap-hours', '24'])
 		out_dir += '-p48-o24'
 
