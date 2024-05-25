@@ -47,14 +47,18 @@ def collect_results(root_path: Path) -> pd.DataFrame:
 				setup = json.load(setup_file)
 				record.update({ key: setup[key] for key in setup if key not in ['durations'] })
 
-		with open(result_dir.joinpath('meta.json')) as meta_file:
-			meta_data = json.load(meta_file)
-			record['n_epochs'] = meta_data['train_epochs']
+		meta_path = result_dir.joinpath('meta.json')
+		if meta_path.is_file():
+			with open(meta_path) as meta_file:
+				meta_data = json.load(meta_file)
+				record['n_epochs'] = meta_data['train_epochs']
 
-		with open(result_dir.joinpath('test-result.json')) as result_file:
-			result = json.load(result_file)
-			record['accuracy'] = result['result']['accuracy']
-			record['classes'] = ','.join(result['classes'])
+		result_path = result_dir.joinpath('test-result.json')
+		if result_path.is_file():
+			with open(result_path) as result_file:
+				result = json.load(result_file)
+				record['accuracy'] = result['result']['accuracy']
+				record['classes'] = ','.join(result['classes'])
 
 		for inference_dir in result_dir.glob('inference*'):
 			with open(inference_dir.joinpath('test-result.json')) as inference_result_file:
