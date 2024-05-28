@@ -1,45 +1,15 @@
 {
-  "n_workers": 20,
-  "rng_seeds": [69, 2137],
+  "n_workers": 24,
+  "rng_seeds": [19],
   "oss": [
     {
       "target": "age",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-split-server.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30
-    },
-    {
-      "target": "age",
-      "architecture": "inception_v3",
-      "lr": 0.001,
-      "bs": 64,
-      "data_config": "data-split-server.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30
-    },
-    {
-      "target": "age",
-      "architecture": "inception_v3",
-      "lr": 0.01,
-      "bs": 64,
-      "data_config": "data-split-server.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30
-    },
-    {
-      "target": "age",
-      "architecture": "inception_v3",
+      "architecture": "resnet50",
       "lr": 0.003,
       "bs": 32,
       "data_config": "data-split-server.json",
       "sample_duration": 5,
-      "samples_per_class": 7000,
+      "samples_per_class": 10000,
       "max_epochs": 30
     },
     {
@@ -49,27 +19,7 @@
       "bs": 96,
       "data_config": "data-split-server.json",
       "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30
-    },
-    {
-      "target": "age",
-      "architecture": "resnet101",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-split-server.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30
-    },
-    {
-      "target": "age",
-      "architecture": "densenet121",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-split-server.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
+      "samples_per_class": 10000,
       "max_epochs": 30
     },
     {
@@ -79,7 +29,17 @@
       "bs": 64,
       "data_config": "data-split-server.json",
       "sample_duration": 5,
-      "samples_per_class": 7000,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
       "max_epochs": 30
     },
     {
@@ -89,162 +49,8 @@
       "bs": 64,
       "data_config": "data-split-server.json",
       "sample_duration": 5,
-      "samples_per_class": 7000,
+      "samples_per_class": 10000,
       "max_epochs": 30
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-0-8-fold-1.json",
-      "sample_duration": 5,
-      "samples_per_class": 5000,
-      "max_epochs": 30,
-      "age_range": "0-8"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-0-8-fold-2.json",
-      "sample_duration": 5,
-      "samples_per_class": 5000,
-      "max_epochs": 30,
-      "age_range": "0-8"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-0-8-fold-3.json",
-      "sample_duration": 5,
-      "samples_per_class": 5000,
-      "max_epochs": 30,
-      "age_range": "0-8"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-0-8-size-groups-fold-1.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30,
-      "age_range": "0-8"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-0-8-size-groups-fold-2.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30,
-      "age_range": "0-8"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-0-8-size-groups-fold-3.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30,
-      "age_range": "0-8"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-13+-fold-1.json",
-      "sample_duration": 5,
-      "samples_per_class": 5000,
-      "max_epochs": 30,
-      "age_range": "13-30"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-13+-fold-2.json",
-      "sample_duration": 5,
-      "samples_per_class": 5000,
-      "max_epochs": 30,
-      "age_range": "13-30"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-13+-size-groups-fold-1.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30,
-      "age_range": "13-30"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-13+-size-groups-fold-2.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30,
-      "age_range": "13-30"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-8-13-fold-1.json",
-      "sample_duration": 5,
-      "samples_per_class": 5000,
-      "max_epochs": 30,
-      "age_range": "8-13"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-8-13-fold-2.json",
-      "sample_duration": 5,
-      "samples_per_class": 5000,
-      "max_epochs": 30,
-      "age_range": "8-13"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-8-13-size-groups-fold-1.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30,
-      "age_range": "8-13"
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-age-8-13-size-groups-fold-2.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30,
-      "age_range": "8-13"
     },
     {
       "target": "size",
@@ -253,7 +59,47 @@
       "bs": 64,
       "data_config": "data-config-size-groups.json",
       "sample_duration": 5,
-      "samples_per_class": 7000,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "resnet50",
+      "lr": 0.003,
+      "bs": 32,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 4000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 96,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 4000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "resnet50",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 4000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 4000,
       "max_epochs": 30
     },
     {
@@ -261,9 +107,9 @@
       "architecture": "inception_v3",
       "lr": 0.003,
       "bs": 64,
-      "data_config": "data-fold-1.json",
+      "data_config": "data-split-server.json",
       "sample_duration": 5,
-      "samples_per_class": 7000,
+      "samples_per_class": 4000,
       "max_epochs": 30
     },
     {
@@ -271,19 +117,9 @@
       "architecture": "inception_v3",
       "lr": 0.003,
       "bs": 64,
-      "data_config": "data-fold-2.json",
+      "data_config": "data-config-size-groups.json",
       "sample_duration": 5,
-      "samples_per_class": 7000,
-      "max_epochs": 30
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-fold-3.json",
-      "sample_duration": 5,
-      "samples_per_class": 7000,
+      "samples_per_class": 4000,
       "max_epochs": 30
     }
   ],
