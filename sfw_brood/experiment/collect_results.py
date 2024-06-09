@@ -22,6 +22,24 @@ from pathlib import Path
 import pandas as pd
 
 
+def find_setup(root_path: Path, experiment_id: str) -> dict:
+	experiment_dirs = list(root_path.rglob(experiment_id))
+	if len(experiment_dirs) == 0:
+		print(f'Experiment {experiment_id} dir not found')
+		return {}
+	elif len(experiment_dirs) > 1:
+		print(f'Found more than 1 experiment {experiment_id} dir, this is ambiguous')
+		return {}
+
+	setup_path = experiment_dirs[0].joinpath('experiment.json')
+	if not setup_path.is_file():
+		print(f'Experiment {experiment_id} setup file not found')
+		return {}
+
+	with open(setup_path) as setup_file:
+		return json.load(setup_file)
+
+
 def collect_results(root_path: Path) -> pd.DataFrame:
 	records = []
 

@@ -1,6 +1,6 @@
 {
   "n_workers": 24,
-  "rng_seeds": [69],
+  "rng_seeds": [69, 2137, 19],
   "oss": [
     {
       "target": "age",
@@ -10,7 +10,7 @@
       "data_config": "data-split-age2.json",
       "sample_duration": 5,
       "samples_per_class": 10000,
-      "max_epochs": 1
+      "max_epochs": 30
     }
   ],
   "simple_size_clf": {

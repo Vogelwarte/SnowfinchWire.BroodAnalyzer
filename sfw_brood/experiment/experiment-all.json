@@ -5,18 +5,8 @@
     {
       "target": "age",
       "architecture": "resnet50",
-      "lr": 0.003,
-      "bs": 32,
-      "data_config": "data-split-server.json",
-      "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
-    },
-    {
-      "target": "age",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 96,
+      "lr": 0.001,
+      "bs": 64,
       "data_config": "data-split-server.json",
       "sample_duration": 5,
       "samples_per_class": 10000,
@@ -26,56 +16,16 @@
       "target": "age",
       "architecture": "resnet50",
       "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-split-server.json",
-      "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
-    },
-    {
-      "target": "age",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-split-server.json",
-      "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-split-server.json",
-      "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
-    },
-    {
-      "target": "size",
-      "architecture": "inception_v3",
-      "lr": 0.003,
-      "bs": 64,
-      "data_config": "data-config-size-groups.json",
-      "sample_duration": 5,
-      "samples_per_class": 10000,
-      "max_epochs": 30
-    },
-    {
-      "target": "age",
-      "architecture": "resnet50",
-      "lr": 0.003,
       "bs": 32,
-      "data_config": "data-split-server.json",
+      "data_config": "data-split-narrow-age.json",
       "sample_duration": 5,
-      "samples_per_class": 4000,
+      "samples_per_class": 10000,
       "max_epochs": 30
     },
     {
       "target": "age",
       "architecture": "inception_v3",
-      "lr": 0.003,
+      "lr": 0.001,
       "bs": 96,
       "data_config": "data-split-server.json",
       "sample_duration": 5,
@@ -86,6 +36,66 @@
       "target": "age",
       "architecture": "resnet50",
       "lr": 0.003,
+      "bs": 96,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "densenet121",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "resnet101",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "resnet50",
+      "lr": 0.01,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "densenet121",
+      "lr": 0.003,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 4000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.01,
+      "bs": 96,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 4000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "resnet50",
+      "lr": 0.001,
       "bs": 64,
       "data_config": "data-split-server.json",
       "sample_duration": 5,
@@ -96,6 +106,16 @@
       "target": "age",
       "architecture": "inception_v3",
       "lr": 0.003,
+      "bs": 32,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 4000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "inception_v3",
+      "lr": 0.01,
       "bs": 64,
       "data_config": "data-split-server.json",
       "sample_duration": 5,
@@ -103,8 +123,18 @@
       "max_epochs": 30
     },
     {
-      "target": "size",
+      "target": "age",
       "architecture": "inception_v3",
+      "lr": 0.001,
+      "bs": 64,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 4000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "resnet101",
       "lr": 0.003,
       "bs": 64,
       "data_config": "data-split-server.json",
@@ -113,11 +143,41 @@
       "max_epochs": 30
     },
     {
-      "target": "size",
+      "target": "age",
       "architecture": "inception_v3",
-      "lr": 0.003,
+      "lr": 0.001,
+      "bs": 96,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "resnet50",
+      "lr": 0.01,
       "bs": 64,
-      "data_config": "data-config-size-groups.json",
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 4000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "resnet50",
+      "lr": 0.001,
+      "bs": 32,
+      "data_config": "data-split-server.json",
+      "sample_duration": 5,
+      "samples_per_class": 10000,
+      "max_epochs": 30
+    },
+    {
+      "target": "age",
+      "architecture": "resnet50",
+      "lr": 0.003,
+      "bs": 96,
+      "data_config": "data-split-server.json",
       "sample_duration": 5,
       "samples_per_class": 4000,
       "max_epochs": 30
