@@ -27,9 +27,9 @@ def find_setup(root_path: Path, experiment_id: str) -> dict:
 	if len(experiment_dirs) == 0:
 		print(f'Experiment {experiment_id} dir not found')
 		return {}
-	elif len(experiment_dirs) > 1:
-		print(f'Found more than 1 experiment {experiment_id} dir, this is ambiguous')
-		return {}
+	# elif len(experiment_dirs) > 1:
+	# 	print(f'Found more than 1 experiment {experiment_id} dir, this is ambiguous')
+	# 	return {}
 
 	setup_path = experiment_dirs[0].joinpath('experiment.json')
 	if not setup_path.is_file():
